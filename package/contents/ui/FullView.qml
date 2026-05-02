@@ -34,10 +34,8 @@ Item {
             DetailHeader {
                 visible: fullRoot.activeSection === 0
                 title: "CPU"
-                icon: "am-cpu-symbolic"
-                value: root.cpuTotal.toFixed(0) + "%"
-                barValue: root.cpuTotal / 100
-                barColor: root.cpuTotal > 80 ? "#ff4444" : "#00aaff"
+                icon: ""
+                showUsageRow: false
             }
 
             CpuDetail {
