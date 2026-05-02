@@ -14,6 +14,8 @@ Item {
     readonly property int labelPx: Math.max(8, Kirigami.Units.sizeForLabels)
     readonly property int twoLineLabelPx: Math.max(8, labelPx - 0.5)
     readonly property int iconSz:  Kirigami.Units.iconSizes.small        // 16 px
+    readonly property int sectionGap: Kirigami.Units.smallSpacing
+    readonly property int hotspotPadding: Math.round(Kirigami.Units.smallSpacing / 2)
     // Smaller icon for inline arrow (next to a single text line)
     readonly property int arrowSz: Math.max(8, Kirigami.Units.iconSizes.small - 4)  // ~12 px
     readonly property var coreColors: ["#00aaff", "#22cc66", "#ffaa00", "#aa66ff", "#ff6688", "#00ccbb"]
@@ -30,7 +32,11 @@ Item {
         // Temp text column
         Text { text: "99.9 °C\n99.9 °C"; font.pixelSize: compactRoot.twoLineLabelPx }
         // Network section: icon + two rows of (arrow icon + speed text)
-        Item { implicitWidth: compactRoot.iconSz;  implicitHeight: compactRoot.iconSz }
+        Item {
+            implicitWidth: compactRoot.iconSz
+            implicitHeight: compactRoot.iconSz
+            Layout.leftMargin: compactRoot.sectionGap
+        }
         Column {
             spacing: 0
             RowLayout {
@@ -45,19 +51,31 @@ Item {
             }
         }
         // Storage icon
-        Item { implicitWidth: compactRoot.iconSz;  implicitHeight: compactRoot.iconSz }
+        Item {
+            implicitWidth: compactRoot.iconSz
+            implicitHeight: compactRoot.iconSz
+            Layout.leftMargin: compactRoot.sectionGap
+        }
         // Storage bar
         Item { implicitWidth: Math.round(compactRoot.iconSz * 0.7); implicitHeight: compactRoot.iconSz }
         // Mini network graph
         Item { implicitWidth: 36; implicitHeight: compactRoot.iconSz }
         // CPU icon
-        Item { implicitWidth: compactRoot.iconSz;  implicitHeight: compactRoot.iconSz }
+        Item {
+            implicitWidth: compactRoot.iconSz
+            implicitHeight: compactRoot.iconSz
+            Layout.leftMargin: compactRoot.sectionGap
+        }
         // CPU bar
         Item { implicitWidth: Math.max(Math.round(compactRoot.iconSz * 0.7), root.cpuCores.length * 4); implicitHeight: compactRoot.iconSz }
         // CPU percent
         Text { text: "100%"; font.pixelSize: compactRoot.labelPx; font.bold: true }
         // RAM icon
-        Item { implicitWidth: compactRoot.iconSz;  implicitHeight: compactRoot.iconSz }
+        Item {
+            implicitWidth: compactRoot.iconSz
+            implicitHeight: compactRoot.iconSz
+            Layout.leftMargin: compactRoot.sectionGap
+        }
         // RAM bar
         Item { implicitWidth: Math.round(compactRoot.iconSz * 0.7); implicitHeight: compactRoot.iconSz }
         // RAM percent
@@ -71,6 +89,7 @@ Item {
 
         // Temperature icon 
         SvgIcon {
+            id: tempIcon
             visible: plasmoid.configuration.showTemps
             name: "am-temperature-symbolic"
             implicitWidth:  compactRoot.iconSz
@@ -80,6 +99,7 @@ Item {
 
         // Temperature values (2 lines) 
         Column {
+            id: tempValues
             visible: plasmoid.configuration.showTemps
             spacing: 0
             Layout.alignment: Qt.AlignVCenter
@@ -117,15 +137,18 @@ Item {
 
         // Network icon 
         SvgIcon {
+            id: networkIcon
             visible: plasmoid.configuration.showNetwork
             name: "am-network-symbolic"
             implicitWidth:  compactRoot.iconSz
             implicitHeight: compactRoot.iconSz
             Layout.alignment: Qt.AlignVCenter
+            Layout.leftMargin: plasmoid.configuration.showTemps ? compactRoot.sectionGap : 0
         }
 
         // Network speeds (icon + text per row) 
         Column {
+            id: networkValues
             visible: plasmoid.configuration.showNetwork
             spacing: 0
             Layout.alignment: Qt.AlignVCenter
@@ -226,15 +249,18 @@ Item {
 
         // Storage icon 
         SvgIcon {
+            id: storageIcon
             visible: plasmoid.configuration.showStorage
             name: "am-harddisk-symbolic"
             implicitWidth:  compactRoot.iconSz
             implicitHeight: compactRoot.iconSz
             Layout.alignment: Qt.AlignVCenter
+            Layout.leftMargin: (plasmoid.configuration.showTemps || plasmoid.configuration.showNetwork) ? compactRoot.sectionGap : 0
         }
 
         // Storage usage bar 
         Item {
+            id: storageBar
             visible: plasmoid.configuration.showStorage
             implicitWidth:  Math.round(compactRoot.iconSz * 0.7)
             implicitHeight: compactRoot.iconSz
@@ -262,15 +288,18 @@ Item {
 
         // CPU icon 
         SvgIcon {
+            id: cpuIcon
             visible: plasmoid.configuration.showCpu
             name: "am-cpu-symbolic"
             implicitWidth:  compactRoot.iconSz
             implicitHeight: compactRoot.iconSz
             Layout.alignment: Qt.AlignVCenter
+            Layout.leftMargin: (plasmoid.configuration.showTemps || plasmoid.configuration.showNetwork || plasmoid.configuration.showStorage) ? compactRoot.sectionGap : 0
         }
 
         //  CPU per-core bars 
         Item {
+            id: cpuBar
             visible: plasmoid.configuration.showCpu
             implicitWidth:  Math.max(Math.round(compactRoot.iconSz * 0.7), root.cpuCores.length * 4)
             implicitHeight: compactRoot.iconSz
@@ -321,11 +350,12 @@ Item {
 
         // CPU percent 
         Text {
+            id: cpuPercent
             visible: plasmoid.configuration.showCpu
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredWidth: Math.max(cpuPctRef.implicitWidth, cpuPctDecRef.implicitWidth)
             Layout.minimumWidth:   Math.max(cpuPctRef.implicitWidth, cpuPctDecRef.implicitWidth)
-            horizontalAlignment: Text.AlignRight
+            horizontalAlignment: Text.AlignLeft
             text: root.cpuTotal < 1 ? root.cpuTotal.toFixed(1) + "%" : root.cpuTotal.toFixed(0) + "%"
             font.pixelSize: compactRoot.labelPx
             font.bold: true
@@ -337,15 +367,18 @@ Item {
 
         // RAM icon 
         SvgIcon {
+            id: ramIcon
             visible: plasmoid.configuration.showRam
             name: "am-memory-symbolic"
             implicitWidth:  compactRoot.iconSz
             implicitHeight: compactRoot.iconSz
             Layout.alignment: Qt.AlignVCenter
+            Layout.leftMargin: (plasmoid.configuration.showTemps || plasmoid.configuration.showNetwork || plasmoid.configuration.showStorage || plasmoid.configuration.showCpu) ? compactRoot.sectionGap : 0
         }
 
         //  RAM vertical bar 
         Item {
+            id: ramBar
             visible: plasmoid.configuration.showRam
             implicitWidth:  Math.round(compactRoot.iconSz * 0.7)
             implicitHeight: compactRoot.iconSz
@@ -370,11 +403,12 @@ Item {
 
         // RAM percent 
         Text {
+            id: ramPercent
             visible: plasmoid.configuration.showRam
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredWidth: ramPctRef.implicitWidth
             Layout.minimumWidth:   ramPctRef.implicitWidth
-            horizontalAlignment: Text.AlignRight
+            horizontalAlignment: Text.AlignLeft
             text: root.ramTotal > 0 ? (root.ramUsed / root.ramTotal * 100).toFixed(0) + "%" : "---%"
             font.pixelSize: compactRoot.labelPx
             font.bold: true
@@ -384,9 +418,93 @@ Item {
         }
     }
 
-    MouseArea {
-        anchors.fill: parent
-        onClicked: plasmoid.expanded = !plasmoid.expanded
-        cursorShape: Qt.PointingHandCursor
+    Rectangle {
+        visible: tempIcon.visible && tempValues.visible
+        x: Math.max(0, tempIcon.x - compactRoot.hotspotPadding)
+        y: 0
+        width: Math.max(0, Math.min(compactRoot.width - x, tempValues.x + tempValues.width - x + compactRoot.hotspotPadding))
+        height: compactRoot.height
+        radius: 3
+        color: tempMouseArea.containsMouse ? root.themeHoverColor : "transparent"
+
+        MouseArea {
+            id: tempMouseArea
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.openSection(4)
+        }
+    }
+
+    Rectangle {
+        visible: networkIcon.visible && netMiniGraph.visible
+        x: Math.max(0, networkIcon.x - compactRoot.hotspotPadding)
+        y: 0
+        width: Math.max(0, Math.min(compactRoot.width - x, netMiniGraph.x + netMiniGraph.width - x + compactRoot.hotspotPadding))
+        height: compactRoot.height
+        radius: 3
+        color: networkMouseArea.containsMouse ? root.themeHoverColor : "transparent"
+
+        MouseArea {
+            id: networkMouseArea
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.openSection(2)
+        }
+    }
+
+    Rectangle {
+        visible: storageIcon.visible && storageBar.visible
+        x: Math.max(0, storageIcon.x - compactRoot.hotspotPadding)
+        y: 0
+        width: Math.max(0, Math.min(compactRoot.width - x, storageBar.x + storageBar.width - x + compactRoot.hotspotPadding))
+        height: compactRoot.height
+        radius: 3
+        color: storageMouseArea.containsMouse ? root.themeHoverColor : "transparent"
+
+        MouseArea {
+            id: storageMouseArea
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.openSection(3)
+        }
+    }
+
+    Rectangle {
+        visible: cpuIcon.visible && cpuPercent.visible
+        x: Math.max(0, cpuIcon.x - compactRoot.hotspotPadding)
+        y: 0
+        width: Math.max(0, Math.min(compactRoot.width - x, cpuPercent.x + cpuPercent.width - x + compactRoot.hotspotPadding))
+        height: compactRoot.height
+        radius: 3
+        color: cpuMouseArea.containsMouse ? root.themeHoverColor : "transparent"
+
+        MouseArea {
+            id: cpuMouseArea
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.openSection(0)
+        }
+    }
+
+    Rectangle {
+        visible: ramIcon.visible && ramPercent.visible
+        x: Math.max(0, ramIcon.x - compactRoot.hotspotPadding)
+        y: 0
+        width: Math.max(0, Math.min(compactRoot.width - x, ramPercent.x + ramPercent.width - x + compactRoot.hotspotPadding))
+        height: compactRoot.height
+        radius: 3
+        color: ramMouseArea.containsMouse ? root.themeHoverColor : "transparent"
+
+        MouseArea {
+            id: ramMouseArea
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: root.openSection(1)
+        }
     }
 }

@@ -39,6 +39,7 @@ PlasmoidItem {
     property var temperatures: []
     property string systemUptime: ""
     property var gpus: []
+    property int selectedSection: -1
 
     //  Internal state 
     property var _cpuPrev: ({})
@@ -57,6 +58,11 @@ PlasmoidItem {
 
     function withAlpha(color, alpha) {
         return Qt.rgba(color.r, color.g, color.b, alpha)
+    }
+
+    function openSection(sectionIndex) {
+        selectedSection = sectionIndex
+        expanded = true
     }
 
     function formatRate(bytes) {

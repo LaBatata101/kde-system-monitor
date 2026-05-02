@@ -13,11 +13,7 @@ Item {
     implicitHeight: Math.min(mainColumn.implicitHeight + Kirigami.Units.largeSpacing * 2,
                              Kirigami.Units.gridUnit * 38)
 
-    property int expandedSection: -1
-
-    function toggleSection(idx) {
-        expandedSection = (expandedSection === idx) ? -1 : idx
-    }
+    readonly property int activeSection: root.selectedSection >= 0 ? root.selectedSection : 0
 
     QQC2.ScrollView {
         id: scrollView
@@ -35,26 +31,23 @@ Item {
             spacing: 0
 
             // CPU 
-            SectionHeader {
+            DetailHeader {
+                visible: fullRoot.activeSection === 0
                 title: "CPU"
                 icon: "am-cpu-symbolic"
                 value: root.cpuTotal.toFixed(0) + "%"
                 barValue: root.cpuTotal / 100
                 barColor: root.cpuTotal > 80 ? "#ff4444" : "#00aaff"
-                expanded: fullRoot.expandedSection === 0
-                onToggled: fullRoot.toggleSection(0)
             }
 
             CpuDetail {
-                visible: fullRoot.expandedSection === 0
+                visible: fullRoot.activeSection === 0
                 Layout.fillWidth: true
             }
 
-            Kirigami.Separator { Layout.fillWidth: true }
-
             // RAM 
-            SectionHeader {
-                visible: plasmoid.configuration.showRam
+            DetailHeader {
+                visible: fullRoot.activeSection === 1 && plasmoid.configuration.showRam
                 title: "RAM"
                 icon: "am-memory-symbolic"
                 value: root.ramTotal > 0
@@ -62,40 +55,30 @@ Item {
                     : "..."
                 barValue: root.ramTotal > 0 ? root.ramUsed / root.ramTotal : 0
                 barColor: (root.ramUsed / root.ramTotal) > 0.85 ? "#ff4444" : "#00aaff"
-                expanded: fullRoot.expandedSection === 1
-                onToggled: fullRoot.toggleSection(1)
             }
 
             RamDetail {
-                visible: plasmoid.configuration.showRam && fullRoot.expandedSection === 1
-                Layout.fillWidth: true
-            }
-
-            Kirigami.Separator {
-                visible: plasmoid.configuration.showRam
+                visible: fullRoot.activeSection === 1 && plasmoid.configuration.showRam
                 Layout.fillWidth: true
             }
 
             // Network 
-            SectionHeader {
+            DetailHeader {
+                visible: fullRoot.activeSection === 2
                 title: "Network"
                 icon: "am-network-symbolic"
                 value: "↑ " + root.netUploadSpeed + "  ↓ " + root.netDownloadSpeed
-                barValue: 0
                 showBar: false
-                expanded: fullRoot.expandedSection === 2
-                onToggled: fullRoot.toggleSection(2)
             }
 
             NetworkDetail {
-                visible: fullRoot.expandedSection === 2
+                visible: fullRoot.activeSection === 2
                 Layout.fillWidth: true
             }
 
-            Kirigami.Separator { Layout.fillWidth: true }
-
             // Storage 
-            SectionHeader {
+            DetailHeader {
+                visible: fullRoot.activeSection === 3
                 title: "Storage"
                 icon: "am-harddisk-symbolic"
                 value: root.storageDevices.length > 0
@@ -104,19 +87,16 @@ Item {
                 barValue: root.storageDevices.length > 0 ? root.storageDevices[0].percent / 100 : 0
                 barColor: root.storageDevices.length > 0 && root.storageDevices[0].percent > 85
                     ? "#ff4444" : "#00aaff"
-                expanded: fullRoot.expandedSection === 3
-                onToggled: fullRoot.toggleSection(3)
             }
 
             StorageDetail {
-                visible: fullRoot.expandedSection === 3
+                visible: fullRoot.activeSection === 3
                 Layout.fillWidth: true
             }
 
-            Kirigami.Separator { Layout.fillWidth: true }
-
             // Temperatures 
-            SectionHeader {
+            DetailHeader {
+                visible: fullRoot.activeSection === 4
                 title: "Temperatures"
                 icon: "am-temperature-symbolic"
                 value: root.temperatures.length > 0
@@ -125,12 +105,10 @@ Item {
                 barValue: root.temperatures.length > 0 ? root.temperatures[0].value / 100 : 0
                 barColor: root.temperatures.length > 0 && root.temperatures[0].value > 80
                     ? "#ff4444" : "#ffaa00"
-                expanded: fullRoot.expandedSection === 4
-                onToggled: fullRoot.toggleSection(4)
             }
 
             TempDetail {
-                visible: fullRoot.expandedSection === 4
+                visible: fullRoot.activeSection === 4
                 Layout.fillWidth: true
             }
         }
