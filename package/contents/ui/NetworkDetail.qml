@@ -39,6 +39,11 @@ ColumnLayout {
             var ctx = getContext("2d")
             ctx.clearRect(0, 0, width, height)
             var halfHeight = height / 2
+            var dividerGap = 3
+            var uploadBottom = halfHeight - dividerGap
+            var uploadHeight = uploadBottom
+            var downloadTop = halfHeight + dividerGap
+            var downloadHeight = height - downloadTop
 
             ctx.fillStyle = root.themeGraphBackgroundColor
             ctx.fillRect(0, 0, width, height)
@@ -47,13 +52,13 @@ ColumnLayout {
             ctx.lineWidth = 1
             for (var g = 0.25; g <= 1.0; g += 0.25) {
                 ctx.beginPath()
-                ctx.moveTo(0, halfHeight * (1 - g))
-                ctx.lineTo(width, halfHeight * (1 - g))
+                ctx.moveTo(0, uploadBottom - uploadHeight * g)
+                ctx.lineTo(width, uploadBottom - uploadHeight * g)
                 ctx.stroke()
 
                 ctx.beginPath()
-                ctx.moveTo(0, halfHeight + halfHeight * (1 - g))
-                ctx.lineTo(width, halfHeight + halfHeight * (1 - g))
+                ctx.moveTo(0, downloadTop + downloadHeight * (1 - g))
+                ctx.lineTo(width, downloadTop + downloadHeight * (1 - g))
                 ctx.stroke()
             }
 
@@ -69,14 +74,26 @@ ColumnLayout {
             if (history.length < 2) return
 
             // Upload (red)
+            ctx.fillStyle = Qt.rgba(1, 0.27, 0.27, 0.2)
+            ctx.beginPath()
+            ctx.moveTo(0, uploadBottom)
+            for (var i = 0; i < history.length; i++) {
+                var x = i / (history.length - 1) * width
+                var y = uploadBottom - history[i].tx * uploadHeight
+                ctx.lineTo(x, y)
+            }
+            ctx.lineTo(width, uploadBottom)
+            ctx.closePath()
+            ctx.fill()
+
             ctx.strokeStyle = "#ff4444"
             ctx.lineWidth = 1.5
             ctx.beginPath()
-            for (var i = 0; i < history.length; i++) {
-                var x = i / (history.length - 1) * width
-                var y = halfHeight - history[i].tx * halfHeight
-                if (i === 0) ctx.moveTo(x, y)
-                else ctx.lineTo(x, y)
+            for (var j = 0; j < history.length; j++) {
+                var x2 = j / (history.length - 1) * width
+                var y2 = uploadBottom - history[j].tx * uploadHeight
+                if (j === 0) ctx.moveTo(x2, y2)
+                else ctx.lineTo(x2, y2)
             }
             ctx.stroke()
 
@@ -84,10 +101,10 @@ ColumnLayout {
             ctx.fillStyle = Qt.rgba(0, 0.6, 1, 0.2)
             ctx.beginPath()
             ctx.moveTo(0, height)
-            for (var j = 0; j < history.length; j++) {
-                var x2 = j / (history.length - 1) * width
-                var y2 = height - history[j].rx * halfHeight
-                ctx.lineTo(x2, y2)
+            for (var k = 0; k < history.length; k++) {
+                var x3 = k / (history.length - 1) * width
+                var y3 = height - history[k].rx * downloadHeight
+                ctx.lineTo(x3, y3)
             }
             ctx.lineTo(width, height)
             ctx.closePath()
@@ -96,11 +113,11 @@ ColumnLayout {
             ctx.strokeStyle = "#00aaff"
             ctx.lineWidth = 1.5
             ctx.beginPath()
-            for (var k = 0; k < history.length; k++) {
-                var x3 = k / (history.length - 1) * width
-                var y3 = height - history[k].rx * halfHeight
-                if (k === 0) ctx.moveTo(x3, y3)
-                else ctx.lineTo(x3, y3)
+            for (var l = 0; l < history.length; l++) {
+                var x4 = l / (history.length - 1) * width
+                var y4 = height - history[l].rx * downloadHeight
+                if (l === 0) ctx.moveTo(x4, y4)
+                else ctx.lineTo(x4, y4)
             }
             ctx.stroke()
 
