@@ -152,13 +152,15 @@ ColumnLayout {
             }
 
             Item {
+                id: storageYAxisLabels
+
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
                 anchors.right: parent.right
                 width: axisLabelWidth
 
                 Text {
-                    anchors.top: parent.top
+                    y: -6
                     width: parent.width
                     text: storageDetailRoot.formatAxisRate(storageDetailRoot.axisScale)
                     color: root.themeGraphLabelColor
@@ -190,7 +192,7 @@ ColumnLayout {
                     horizontalAlignment: Text.AlignLeft
                 }
                 Text {
-                    anchors.bottom: parent.bottom
+                    y: parent.height - 6
                     width: parent.width
                     text: "0 MB/s"
                     color: root.themeGraphLabelColor
@@ -200,31 +202,48 @@ ColumnLayout {
             }
         }
 
-        RowLayout {
+        Item {
             Layout.fillWidth: true
-            spacing: Kirigami.Units.smallSpacing
+            Layout.preferredHeight: storageXAxisLabels.height + storageLegend.implicitHeight
+            Layout.minimumHeight: storageXAxisLabels.height + storageLegend.implicitHeight
 
-            ColumnLayout {
-                spacing: 0
+            Item {
+                id: storageXAxisLabels
+                anchors.left: parent.left
+                anchors.right: parent.right
+                height: Math.max(storagePastLabel.implicitHeight, storageNowLabel.implicitHeight)
+
                 PlasmaComponents.Label {
+                    id: storagePastLabel
+                    anchors.left: parent.left
+                    anchors.top: parent.top
                     text: "5min ago"
                     color: root.themeGraphLabelColor
                     font.pixelSize: 9
                 }
-                RowLayout {
-                    Rectangle { width: 12; height: 3; color: "#00aaff"; radius: 1 }
-                    PlasmaComponents.Label { text: "Read " + root.storageReadSpeed; font.pixelSize: 10 }
-                    Rectangle { width: 12; height: 3; color: "#ff4444"; radius: 1 }
-                    PlasmaComponents.Label { text: "Write " + root.storageWriteSpeed; font.pixelSize: 10 }
+
+                PlasmaComponents.Label {
+                    id: storageNowLabel
+                    anchors.right: parent.right
+                    anchors.rightMargin: axisLabelWidth + axisLabelGap
+                    anchors.top: parent.top
+                    text: "now"
+                    color: root.themeGraphLabelColor
+                    font.pixelSize: 9
                 }
             }
-            Item { Layout.fillWidth: true }
-            PlasmaComponents.Label {
-                text: "now"
-                color: root.themeGraphLabelColor
-                font.pixelSize: 9
+
+            RowLayout {
+                id: storageLegend
+                anchors.left: parent.left
+                anchors.top: storageXAxisLabels.bottom
+                spacing: Kirigami.Units.smallSpacing
+
+                Rectangle { width: 12; height: 3; color: "#00aaff"; radius: 1 }
+                PlasmaComponents.Label { text: "Read " + root.storageReadSpeed; font.pixelSize: 10 }
+                Rectangle { width: 12; height: 3; color: "#ff4444"; radius: 1 }
+                PlasmaComponents.Label { text: "Write " + root.storageWriteSpeed; font.pixelSize: 10 }
             }
-            Item { Layout.preferredWidth: axisLabelWidth + axisLabelGap }
         }
     }
 
