@@ -40,8 +40,9 @@ ColumnLayout {
             ctx.clearRect(0, 0, width, height)
             var halfHeight = height / 2
             var dividerGap = 3
+            var topPadding = 3
             var uploadBottom = halfHeight - dividerGap
-            var uploadHeight = uploadBottom
+            var uploadHeight = uploadBottom - topPadding
             var downloadTop = halfHeight + dividerGap
             var downloadHeight = height - downloadTop
 
