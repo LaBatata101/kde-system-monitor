@@ -48,7 +48,8 @@ Item {
                 ? (root.ramUsed / 1024).toFixed(1) + " / " + (root.ramTotal / 1024).toFixed(1) + " GB"
                 : "..."
             barValue: root.ramTotal > 0 ? root.ramUsed / root.ramTotal : 0
-            barColor: (root.ramUsed / root.ramTotal) > 0.85 ? "#ff4444" : "#00aaff"
+            barColor: root.ramTotal > 0 && (root.ramUsed / root.ramTotal) > 0.85 ? "#ff4444" : "#00aaff"
+            showUsageRow: false
         }
 
         RamDetail {
@@ -63,6 +64,7 @@ Item {
             icon: "am-network-symbolic"
             value: "↑ " + root.netUploadSpeed + "  ↓ " + root.netDownloadSpeed
             showBar: false
+            showUsageRow: false
         }
 
         NetworkDetail {
@@ -81,6 +83,7 @@ Item {
             barValue: root.storageDevices.length > 0 ? root.storageDevices[0].percent / 100 : 0
             barColor: root.storageDevices.length > 0 && root.storageDevices[0].percent > 85
                 ? "#ff4444" : "#00aaff"
+            showUsageRow: false
         }
 
         StorageDetail {
@@ -99,6 +102,7 @@ Item {
             barValue: root.temperatures.length > 0 ? root.temperatures[0].value / 100 : 0
             barColor: root.temperatures.length > 0 && root.temperatures[0].value > 80
                 ? "#ff4444" : "#ffaa00"
+            showUsageRow: false
         }
 
         TempDetail {

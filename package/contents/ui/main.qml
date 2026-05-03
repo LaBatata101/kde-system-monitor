@@ -26,6 +26,8 @@ PlasmoidItem {
     property real ramCached: 0
     property real swapTotal: 0
     property real swapUsed: 0
+    property var ramHistory: []
+    property var ramTopProcesses: []
 
     property string netUploadSpeed: "0 B/s"
     property string netDownloadSpeed: "0 B/s"
@@ -36,6 +38,12 @@ PlasmoidItem {
     property var netHistory: []
 
     property var storageDevices: []
+    property string storageReadSpeed: "0 B/s"
+    property string storageWriteSpeed: "0 B/s"
+    property real storageReadRaw: 0
+    property real storageWriteRaw: 0
+    property var storageHistory: []
+    property var storageBlockDevices: []
     property var temperatures: []
     property string systemUptime: ""
     property var gpus: []
@@ -44,6 +52,9 @@ PlasmoidItem {
     //  Internal state 
     property var _cpuPrev: ({})
     property var _netPrev: ({rx: 0, tx: 0, time: 0})
+    property var _diskPrev: ({read: 0, write: 0, time: 0})
+    readonly property string _topProcessesCommand: "ps -eo pcpu=,comm= --sort=-pcpu 2>/dev/null | awk '$2 !~ /^(ps|awk|sh|bash|dash|zsh)$/ { print; count++; if (count == 5) exit }'"
+    readonly property string _ramTopProcessesCommand: "ps -eo rss=,pmem=,comm= --sort=-rss 2>/dev/null | awk '$3 !~ /^(ps|awk|sh|bash|dash|zsh)$/ { print; count++; if (count == 5) exit }'"
 
     //  Helpers 
     readonly property color themeHoverColor: withAlpha(Kirigami.Theme.textColor, 0.06)
@@ -82,6 +93,20 @@ PlasmoidItem {
         return (bytes / 1048576).toFixed(1) + " MB/s"
     }
 
+    function formatMemoryKib(kib) {
+        if (kib < 1024) return kib.toFixed(0) + " KB"
+        if (kib < 1048576) return (kib / 1024).toFixed(kib < 10240 ? 1 : 0) + " MB"
+        return (kib / 1048576).toFixed(1) + " GB"
+    }
+
+    function formatStorageBytes(bytes) {
+        if (bytes < 1024) return bytes.toFixed(0) + " B"
+        if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB"
+        if (bytes < 1073741824) return (bytes / 1048576).toFixed(1) + " MB"
+        if (bytes < 1099511627776) return (bytes / 1073741824).toFixed(1) + " GB"
+        return (bytes / 1099511627776).toFixed(1) + " TB"
+    }
+
     //  Executable data source 
     P5Support.DataSource {
         id: exe
@@ -92,14 +117,17 @@ PlasmoidItem {
             exe.disconnectSource(src)
             var out = data["stdout"] || ""
             if (src.indexOf("/proc/stat") !== -1)          parseCpuStat(out)
+            else if (src.indexOf("/proc/diskstats") !== -1) parseDiskStats(out)
             else if (src.indexOf("/proc/meminfo") !== -1)  parseMemInfo(out)
             else if (src.indexOf("/proc/net/dev") !== -1)  parseNetDev(out)
             else if (src.indexOf("df ") !== -1)            parseDf(out)
+            else if (src.indexOf("lsblk -J") !== -1)       parseBlockDevices(out)
             else if (src.indexOf("sensors") !== -1)        parseSensors(out)
             else if (src.indexOf("uptime") !== -1)         systemUptime = out.trim().replace(/^up\s+/, "")
             else if (src.indexOf("lspci") !== -1)          parseGpu(out)
             else if (src.indexOf("/proc/cpuinfo") !== -1)  parseCpuModel(out)
-            else if (src.indexOf("ps ") !== -1)            parseProcs(out)
+            else if (src.indexOf("pcpu=") !== -1)          parseProcs(out)
+            else if (src.indexOf("rss=") !== -1)           parseRamProcs(out)
         }
     }
 
@@ -109,6 +137,8 @@ PlasmoidItem {
         onTriggered: {
             exe.connectSource("cat /proc/stat")
             exe.connectSource("cat /proc/net/dev")
+            exe.connectSource("cat /proc/diskstats")
+            exe.connectSource(_topProcessesCommand)
         }
     }
 
@@ -117,9 +147,10 @@ PlasmoidItem {
         onTriggered: {
             exe.connectSource("cat /proc/meminfo")
             exe.connectSource("df -h --output=source,size,used,avail,pcent,target 2>/dev/null | grep '^/dev'")
+            exe.connectSource("lsblk -J -b -o NAME,SIZE,TYPE,MODEL,TRAN,RM 2>/dev/null")
             exe.connectSource("sensors 2>/dev/null || echo ''")
             exe.connectSource("uptime -p 2>/dev/null || uptime")
-            exe.connectSource("ps -eo pcpu,comm --sort=-pcpu 2>/dev/null | head -6 | tail -5")
+            exe.connectSource(_ramTopProcessesCommand)
         }
     }
 
@@ -133,6 +164,11 @@ PlasmoidItem {
 
     Component.onCompleted: {
         exe.connectSource("cat /proc/stat")
+        exe.connectSource("cat /proc/diskstats")
+        exe.connectSource(_topProcessesCommand)
+        exe.connectSource("cat /proc/meminfo")
+        exe.connectSource(_ramTopProcessesCommand)
+        exe.connectSource("lsblk -J -b -o NAME,SIZE,TYPE,MODEL,TRAN,RM 2>/dev/null")
         exe.connectSource("cat /proc/cpuinfo 2>/dev/null | grep 'model name' | head -1 | cut -d: -f2")
         exe.connectSource("lspci 2>/dev/null | grep -iE 'VGA|3D|Display' | sed 's/.*: //'")
     }
@@ -213,6 +249,11 @@ PlasmoidItem {
         ramUsed   = ramTotal - ramFree
         swapTotal = (info["SwapTotal"] || 0) / 1024
         swapUsed  = swapTotal - (info["SwapFree"] || 0) / 1024
+
+        var hist = ramHistory.slice()
+        hist.push(ramTotal > 0 ? Math.max(0, Math.min(1, ramUsed / ramTotal)) : 0)
+        if (hist.length > 60) hist.shift()
+        ramHistory = hist
     }
 
     function parseNetDev(raw) {
@@ -257,7 +298,7 @@ PlasmoidItem {
             var parts = lines[i].trim().split(/\s+/)
             if (parts.length >= 6) {
                 var mnt = parts[5]
-                if (mnt === "/" || mnt.startsWith("/home") || mnt.startsWith("/mnt") || mnt.startsWith("/media")) {
+                if (mnt === "/" || mnt.startsWith("/home") || mnt.startsWith("/mnt") || mnt.startsWith("/media") || mnt.startsWith("/run/media")) {
                     devs.push({
                         device:  parts[0],
                         size:    parts[1],
@@ -270,6 +311,87 @@ PlasmoidItem {
             }
         }
         storageDevices = devs
+    }
+
+    function parseBlockDevices(raw) {
+        var devs = []
+        try {
+            var parsed = JSON.parse(raw)
+            var blockDevices = parsed.blockdevices || []
+
+            function usageForNode(node) {
+                var path = "/dev/" + node.name
+                for (var i = 0; i < storageDevices.length; i++) {
+                    if (storageDevices[i].device === path) return storageDevices[i]
+                }
+
+                var children = node.children || []
+                for (var j = 0; j < children.length; j++) {
+                    var childUsage = usageForNode(children[j])
+                    if (childUsage) return childUsage
+                }
+
+                return null
+            }
+
+            blockDevices.forEach(function(device) {
+                if (device.type !== "disk" || device.name.indexOf("zram") === 0) return
+
+                var model = (device.model || "").trim()
+                var transport = (device.tran || "").trim()
+                var removable = device.rm === true
+                var usage = usageForNode(device)
+                devs.push({
+                    name: model || device.name,
+                    path: "/dev/" + device.name,
+                    size: formatStorageBytes(parseFloat(device.size) || 0),
+                    detail: (transport ? transport.toUpperCase() : "Disk") + (removable ? " • Removable" : ""),
+                    hasUsage: usage !== null,
+                    used: usage ? usage.used : "",
+                    usageSize: usage ? usage.size : formatStorageBytes(parseFloat(device.size) || 0),
+                    percent: usage ? usage.percent : 0
+                })
+            })
+        } catch (e) {
+            devs = []
+        }
+        storageBlockDevices = devs
+    }
+
+    function isWholeDiskDevice(name) {
+        return name.match(/^(sd[a-z]+|vd[a-z]+|xvd[a-z]+|hd[a-z]+|nvme\d+n\d+|mmcblk\d+|md\d+)$/) !== null
+    }
+
+    function parseDiskStats(raw) {
+        var now = Date.now()
+        var readBytes = 0
+        var writeBytes = 0
+
+        raw.split("\n").forEach(function(line) {
+            var parts = line.trim().split(/\s+/)
+            if (parts.length < 10) return
+
+            var name = parts[2]
+            if (!isWholeDiskDevice(name)) return
+
+            readBytes += (parseInt(parts[5]) || 0) * 512
+            writeBytes += (parseInt(parts[9]) || 0) * 512
+        })
+
+        var dt = _diskPrev.time > 0 ? (now - _diskPrev.time) / 1000 : 1
+        var readRate = _diskPrev.time > 0 ? Math.max(0, (readBytes - _diskPrev.read) / dt) : 0
+        var writeRate = _diskPrev.time > 0 ? Math.max(0, (writeBytes - _diskPrev.write) / dt) : 0
+        _diskPrev = {read: readBytes, write: writeBytes, time: now}
+
+        storageReadRaw = readRate
+        storageWriteRaw = writeRate
+        storageReadSpeed = formatRate(readRate)
+        storageWriteSpeed = formatRate(writeRate)
+
+        var hist = storageHistory.slice()
+        hist.push({read: readRate, write: writeRate})
+        if (hist.length > 60) hist.shift()
+        storageHistory = hist
     }
 
     function parseSensors(raw) {
@@ -311,6 +433,22 @@ PlasmoidItem {
             }
         })
         topProcesses = procs
+    }
+
+    function parseRamProcs(raw) {
+        var procs = []
+        raw.trim().split("\n").forEach(function(line) {
+            var parts = line.trim().split(/\s+/)
+            if (parts.length >= 3) {
+                var rssKib = parseFloat(parts[0]) || 0
+                procs.push({
+                    memory: parseFloat(parts[1]) || 0,
+                    memoryValue: formatMemoryKib(rssKib),
+                    name: parts.slice(2).join(" ")
+                })
+            }
+        })
+        ramTopProcesses = procs
     }
 
     // Representations 

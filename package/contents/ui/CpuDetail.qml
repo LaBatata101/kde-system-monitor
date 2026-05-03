@@ -265,21 +265,23 @@ ColumnLayout {
     }
 
     Repeater {
-        model: root.topProcesses
+        model: root.topProcesses.length
         delegate: RowLayout {
             Layout.fillWidth: true
             Layout.leftMargin: Kirigami.Units.smallSpacing
             Layout.rightMargin: Kirigami.Units.smallSpacing
 
+            readonly property var processInfo: root.topProcesses[index] || ({ name: "", cpu: 0 })
+
             PlasmaComponents.Label {
-                text: modelData.name
+                text: processInfo.name
                 Layout.fillWidth: true
                 font.bold: true
                 font.pixelSize: 11
                 elide: Text.ElideRight
             }
             PlasmaComponents.Label {
-                text: modelData.cpu.toFixed(1) + "%"
+                text: processInfo.cpu.toFixed(1) + "%"
                 font.pixelSize: 11
                 horizontalAlignment: Text.AlignRight
             }
