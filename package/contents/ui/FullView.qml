@@ -11,8 +11,10 @@ Item {
     implicitHeight: mainColumn.implicitHeight
     Layout.minimumWidth: implicitWidth
     Layout.preferredWidth: implicitWidth
+    Layout.maximumWidth: implicitWidth
     Layout.minimumHeight: implicitHeight
     Layout.preferredHeight: implicitHeight
+    Layout.maximumHeight: implicitHeight
 
     readonly property int activeSection: root.selectedSection >= 0 ? root.selectedSection : 0
 
