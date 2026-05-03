@@ -39,9 +39,6 @@ ColumnLayout {
         font.pixelSize: 10
     }
 
-    // Padding
-    Item { height: Kirigami.Units.smallSpacing }
-
     // CPU Model
     PlasmaComponents.Label {
         Layout.fillWidth: true
@@ -120,8 +117,8 @@ ColumnLayout {
 
         Item {
             Layout.fillWidth: true
-            Layout.preferredHeight: 80
-            Layout.minimumHeight: 80
+            Layout.preferredHeight: 58
+            Layout.minimumHeight: 58
 
             Rectangle {
                 anchors.fill: parent
@@ -229,8 +226,8 @@ ColumnLayout {
 
             Item {
                 Layout.fillWidth: true
-                Layout.preferredHeight: 12
-                Layout.minimumHeight: 12
+                Layout.preferredHeight: 10
+                Layout.minimumHeight: 10
 
                 Rectangle {
                     anchors.fill: parent
@@ -317,17 +314,15 @@ ColumnLayout {
         horizontalAlignment: Text.AlignHCenter
         text: "System uptime"
         font.bold: true
-        font.pixelSize: 12
+        font.pixelSize: 11
     }
 
     PlasmaComponents.Label {
         Layout.fillWidth: true
         horizontalAlignment: Text.AlignHCenter
         text: root.systemUptime || "..."
-        font.pixelSize: 11
+        font.pixelSize: 10
     }
-
-    Item { height: Kirigami.Units.smallSpacing }
 
     Window {
         id: coreInfoWindow

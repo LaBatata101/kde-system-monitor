@@ -20,6 +20,20 @@ Item {
     readonly property int arrowSz: Math.max(8, Kirigami.Units.iconSizes.small - 4)  // ~12 px
     readonly property var coreColors: ["#00aaff", "#22cc66", "#ffaa00", "#aa66ff", "#ff6688", "#00ccbb"]
 
+    function hideExpandedFeedback() {
+        var item = compactRoot.parent
+        while (item) {
+            if (item.expandedFeedback) {
+                item.expandedFeedback.opacity = 0
+                item.expandedFeedback.visible = false
+                return
+            }
+            item = item.parent
+        }
+    }
+
+    Component.onCompleted: Qt.callLater(hideExpandedFeedback)
+
     // Hidden sizer row 
     // Must mirror every item in contentRow so implicitWidth is stable.
     RowLayout {
