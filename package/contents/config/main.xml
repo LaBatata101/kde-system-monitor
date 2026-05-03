@@ -23,5 +23,8 @@
         <entry name="showTemps" type="Bool">
             <default>true</default>
         </entry>
+        <entry name="sectionOrder" type="String">
+            <default>temps,network,storage,cpu,ram</default>
+        </entry>
     </group>
 </kcfg>

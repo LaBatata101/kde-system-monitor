@@ -76,6 +76,19 @@ PlasmoidItem {
         expanded = true
     }
 
+    function openSystemResourceMonitor() {
+        exe.connectSource("kstart plasma-systemmonitor")
+    }
+
+    function openConfigurationWindow() {
+        var configureAction = Plasmoid.internalAction("configure")
+        if (configureAction) {
+            configureAction.trigger()
+        } else {
+            Plasmoid.requestConfiguration()
+        }
+    }
+
     function formatRate(bytes) {
         if (bytes < 1024)       return bytes.toFixed(0) + " B/s"
         if (bytes < 1048576)    return (bytes / 1024).toFixed(1) + " KB/s"
@@ -133,7 +146,9 @@ PlasmoidItem {
 
     // Timers 
     Timer {
-        interval: 1000; running: true; repeat: true
+        interval: Math.max(500, plasmoid.configuration.updateInterval)
+        running: true
+        repeat: true
         onTriggered: {
             exe.connectSource("cat /proc/stat")
             exe.connectSource("cat /proc/net/dev")
@@ -143,7 +158,9 @@ PlasmoidItem {
     }
 
     Timer {
-        interval: 2000; running: true; repeat: true
+        interval: Math.max(500, plasmoid.configuration.updateInterval)
+        running: true
+        repeat: true
         onTriggered: {
             exe.connectSource("cat /proc/meminfo")
             exe.connectSource("df -h --output=source,size,used,avail,pcent,target 2>/dev/null | grep '^/dev'")

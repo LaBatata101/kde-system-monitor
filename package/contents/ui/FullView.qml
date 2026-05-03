@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import org.kde.plasma.plasmoid
+import org.kde.plasma.components as PlasmaComponents
 import org.kde.kirigami as Kirigami
 
 Item {
@@ -108,6 +109,71 @@ Item {
         TempDetail {
             visible: fullRoot.activeSection === 4
             Layout.fillWidth: true
+        }
+
+        RowLayout {
+            Layout.alignment: Qt.AlignHCenter
+            Layout.topMargin: Kirigami.Units.smallSpacing
+            Layout.bottomMargin: Kirigami.Units.smallSpacing
+            spacing: Kirigami.Units.smallSpacing
+
+            PlasmaComponents.ToolButton {
+                id: systemMonitorButton
+
+                Layout.preferredWidth: Kirigami.Units.gridUnit * 2
+                Layout.preferredHeight: Kirigami.Units.gridUnit * 2
+                Accessible.name: "Open System Monitor"
+                onClicked: root.openSystemResourceMonitor()
+
+                HoverHandler {
+                    cursorShape: Qt.PointingHandCursor
+                }
+
+                contentItem: Item {
+                    SvgIcon {
+                        anchors.centerIn: parent
+                        width: Kirigami.Units.iconSizes.smallMedium
+                        height: width
+                        name: "am-system-monitor-symbolic"
+                    }
+                }
+
+                background: Rectangle {
+                    radius: 3
+                    color: systemMonitorButton.hovered ? root.themeHoverColor : "transparent"
+                }
+
+                PlasmaComponents.ToolTip.text: Accessible.name
+            }
+
+            PlasmaComponents.ToolButton {
+                id: settingsButton
+
+                Layout.preferredWidth: Kirigami.Units.gridUnit * 2
+                Layout.preferredHeight: Kirigami.Units.gridUnit * 2
+                Accessible.name: "Configure Plasmoid"
+                onClicked: root.openConfigurationWindow()
+
+                HoverHandler {
+                    cursorShape: Qt.PointingHandCursor
+                }
+
+                contentItem: Item {
+                    SvgIcon {
+                        anchors.centerIn: parent
+                        width: Kirigami.Units.iconSizes.smallMedium
+                        height: width
+                        name: "am-settings-symbolic"
+                    }
+                }
+
+                background: Rectangle {
+                    radius: 3
+                    color: settingsButton.hovered ? root.themeHoverColor : "transparent"
+                }
+
+                PlasmaComponents.ToolTip.text: Accessible.name
+            }
         }
     }
 }
