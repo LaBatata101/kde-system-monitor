@@ -45,12 +45,14 @@ Item {
         Item { implicitWidth: compactRoot.iconSz;  implicitHeight: compactRoot.iconSz }
         // Temp text column
         Text { text: "99.9 °C\n99.9 °C"; font.pixelSize: compactRoot.twoLineLabelPx }
-        // Network section: icon + two rows of (arrow icon + speed text)
+        // Network section: icon + graph + two rows of (arrow icon + speed text)
         Item {
             implicitWidth: compactRoot.iconSz
             implicitHeight: compactRoot.iconSz
             Layout.leftMargin: compactRoot.sectionGap
         }
+        // Mini network graph
+        Item { implicitWidth: 36; implicitHeight: compactRoot.iconSz + 10 }
         Column {
             spacing: 0
             RowLayout {
@@ -72,8 +74,6 @@ Item {
         }
         // Storage bar
         Item { implicitWidth: Math.round(compactRoot.iconSz * 0.7); implicitHeight: compactRoot.iconSz }
-        // Mini network graph
-        Item { implicitWidth: 36; implicitHeight: compactRoot.iconSz }
         // CPU icon
         Item {
             implicitWidth: compactRoot.iconSz
@@ -160,7 +160,98 @@ Item {
             Layout.leftMargin: plasmoid.configuration.showTemps ? compactRoot.sectionGap : 0
         }
 
-        // Network speeds (icon + text per row) 
+        // Network graph 
+        Canvas {
+            id: netMiniGraph
+            visible: plasmoid.configuration.showNetwork
+            implicitWidth:  36
+            implicitHeight: compactRoot.iconSz + 10
+            Layout.alignment: Qt.AlignVCenter
+            property color themeTextColor: Kirigami.Theme.textColor
+
+            onThemeTextColorChanged: requestPaint()
+
+            Connections {
+                target: root
+                function onNetHistoryChanged() { netMiniGraph.requestPaint() }
+            }
+
+            onPaint: {
+                var ctx = getContext("2d")
+                ctx.clearRect(0, 0, width, height)
+                var halfHeight = height / 2
+                var dividerGap = 2
+                var uploadBottom = halfHeight - dividerGap
+                var uploadHeight = uploadBottom
+                var downloadTop = halfHeight + dividerGap
+                var downloadHeight = height - downloadTop
+                var borderColor = root.themeBorderColor
+
+                ctx.strokeStyle = borderColor
+                ctx.lineWidth = 1
+                ctx.strokeRect(0.5, 0.5, width - 1, height - 1)
+                ctx.beginPath()
+                ctx.moveTo(0, halfHeight)
+                ctx.lineTo(width, halfHeight)
+                ctx.stroke()
+
+                var h = root.netHistory
+                if (h.length < 2) return
+
+                ctx.fillStyle = Qt.rgba(1, 0.27, 0.27, 0.2)
+                ctx.beginPath()
+                ctx.moveTo(0, uploadBottom)
+                for (var i = 0; i < h.length; i++) {
+                    var x = i / (h.length - 1) * width
+                    var y = uploadBottom - h[i].tx * uploadHeight
+                    ctx.lineTo(x, y)
+                }
+                ctx.lineTo(width, uploadBottom)
+                ctx.closePath()
+                ctx.fill()
+
+                ctx.strokeStyle = "#ff4444"
+                ctx.lineWidth = 1
+                ctx.beginPath()
+                for (var j = 0; j < h.length; j++) {
+                    var x2 = j / (h.length - 1) * width
+                    var y2 = uploadBottom - h[j].tx * uploadHeight
+                    j === 0 ? ctx.moveTo(x2, y2) : ctx.lineTo(x2, y2)
+                }
+                ctx.stroke()
+
+                ctx.fillStyle = Qt.rgba(0, 0.6, 1, 0.2)
+                ctx.beginPath()
+                ctx.moveTo(0, height)
+                for (var k = 0; k < h.length; k++) {
+                    var x3 = k / (h.length - 1) * width
+                    var y3 = height - h[k].rx * downloadHeight
+                    ctx.lineTo(x3, y3)
+                }
+                ctx.lineTo(width, height)
+                ctx.closePath()
+                ctx.fill()
+
+                ctx.strokeStyle = "#00aaff"
+                ctx.beginPath()
+                for (var l = 0; l < h.length; l++) {
+                    var x4 = l / (h.length - 1) * width
+                    var y4 = height - h[l].rx * downloadHeight
+                    l === 0 ? ctx.moveTo(x4, y4) : ctx.lineTo(x4, y4)
+                }
+                ctx.stroke()
+
+                ctx.strokeStyle = borderColor
+                ctx.lineWidth = 1
+                ctx.strokeRect(0.5, 0.5, width - 1, height - 1)
+                ctx.beginPath()
+                ctx.moveTo(0, halfHeight)
+                ctx.lineTo(width, halfHeight)
+                ctx.stroke()
+            }
+        }
+
+        // Network speeds (icon + text per row)
         Column {
             id: networkValues
             visible: plasmoid.configuration.showNetwork
@@ -199,65 +290,6 @@ Item {
                     color: Kirigami.Theme.textColor
                     font.bold: true
                 }
-            }
-        }
-
-        // Network graph 
-        Canvas {
-            id: netMiniGraph
-            visible: plasmoid.configuration.showNetwork
-            implicitWidth:  36
-            implicitHeight: compactRoot.iconSz
-            Layout.alignment: Qt.AlignVCenter
-            property color themeTextColor: Kirigami.Theme.textColor
-
-            onThemeTextColorChanged: requestPaint()
-
-            Connections {
-                target: root
-                function onNetHistoryChanged() { netMiniGraph.requestPaint() }
-            }
-
-            onPaint: {
-                var ctx = getContext("2d")
-                ctx.clearRect(0, 0, width, height)
-                var halfHeight = height / 2
-                var borderColor = root.themeBorderColor
-
-                ctx.strokeStyle = borderColor
-                ctx.lineWidth = 1
-                ctx.strokeRect(0.5, 0.5, width - 1, height - 1)
-                ctx.beginPath()
-                ctx.moveTo(0, halfHeight)
-                ctx.lineTo(width, halfHeight)
-                ctx.stroke()
-
-                var h = root.netHistory
-                if (h.length < 2) return
-                ctx.strokeStyle = "#ff4444"; ctx.lineWidth = 1
-                ctx.beginPath()
-                for (var i = 0; i < h.length; i++) {
-                    var x = i / (h.length - 1) * width
-                    var y = halfHeight - h[i].tx * halfHeight
-                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
-                }
-                ctx.stroke()
-                ctx.strokeStyle = "#00aaff"
-                ctx.beginPath()
-                for (var j = 0; j < h.length; j++) {
-                    var x2 = j / (h.length - 1) * width
-                    var y2 = height - h[j].rx * halfHeight
-                    j === 0 ? ctx.moveTo(x2, y2) : ctx.lineTo(x2, y2)
-                }
-                ctx.stroke()
-
-                ctx.strokeStyle = borderColor
-                ctx.lineWidth = 1
-                ctx.strokeRect(0.5, 0.5, width - 1, height - 1)
-                ctx.beginPath()
-                ctx.moveTo(0, halfHeight)
-                ctx.lineTo(width, halfHeight)
-                ctx.stroke()
             }
         }
 
@@ -451,10 +483,10 @@ Item {
     }
 
     Rectangle {
-        visible: networkIcon.visible && netMiniGraph.visible
+        visible: networkIcon.visible && networkValues.visible
         x: Math.max(0, networkIcon.x - compactRoot.hotspotPadding)
         y: 0
-        width: Math.max(0, Math.min(compactRoot.width - x, netMiniGraph.x + netMiniGraph.width - x + compactRoot.hotspotPadding))
+        width: Math.max(0, Math.min(compactRoot.width - x, networkValues.x + networkValues.width - x + compactRoot.hotspotPadding))
         height: compactRoot.height
         radius: 3
         color: networkMouseArea.containsMouse ? root.themeHoverColor : "transparent"
