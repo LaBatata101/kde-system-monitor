@@ -237,23 +237,27 @@ ColumnLayout {
             RowLayout {
                 Layout.fillWidth: true
 
-                Text {
+                Item {
+                    id: gpuXAxisContainer
+
                     Layout.fillWidth: true
-                    text: "GPU usage history"
-                    color: gpuDetailRoot.parentRef.themeGraphLabelColor
-                    font.pixelSize: 9
-                }
+                    Layout.preferredHeight: 10
+                    Layout.minimumHeight: 10
 
-                Rectangle {
-                    width: 12
-                    height: 3
-                    color: "#00aaff"
-                    radius: 1
-                }
+                    Text {
+                        anchors.left: gpuXAxisContainer.left
+                        text: "5 mins ago"
+                        color: gpuDetailRoot.parentRef.themeGraphLabelColor
+                        font.pixelSize: 9
+                    }
 
-                PlasmaComponents.Label {
-                    text: "Usage"
-                    font.pixelSize: 10
+                    Text {
+                        anchors.right: gpuXAxisContainer.right
+                        anchors.rightMargin: gpuDetailRoot.axisLabelWidth + gpuDetailRoot.axisLabelGap
+                        text: "now"
+                        color: gpuDetailRoot.parentRef.themeGraphLabelColor
+                        font.pixelSize: 9
+                    }
                 }
             }
         }
