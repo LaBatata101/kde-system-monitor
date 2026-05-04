@@ -49,14 +49,32 @@ PlasmoidItem {
     property var temperatures: []
     property string systemUptime: ""
     property var gpus: []
+    property string gpuName: ""
+    property real gpuUsage: 0
+    property real gpuClockMHz: 0
+    property real gpuTemperature: 0
+    property real gpuMemoryUsedMiB: 0
+    property real gpuMemoryTotalMiB: 0
+    property var gpuDevices: []
+    property var gpuProcesses: []
+    property var gpuHistory: []
     property int selectedSection: -1
 
     //  Internal state 
     property var _cpuPrev: ({})
     property var _netPrev: ({rx: 0, tx: 0, time: 0})
     property var _diskPrev: ({read: 0, write: 0, time: 0})
+    property var _nvidiaGpuDevices: []
+    property var _sysfsGpuDevices: []
+    property var _nvidiaGpuProcesses: []
+    property var _drmGpuProcesses: []
+    property var _gpuHistories: ({})
     readonly property string _topProcessesCommand: "ps -eo pcpu=,comm= --sort=-pcpu 2>/dev/null | awk '$2 !~ /^(ps|awk|sh|bash|dash|zsh)$/ { print; count++; if (count == 5) exit }'"
     readonly property string _ramTopProcessesCommand: "ps -eo rss=,pmem=,comm= --sort=-rss 2>/dev/null | awk '$3 !~ /^(ps|awk|sh|bash|dash|zsh)$/ { print; count++; if (count == 5) exit }'"
+    readonly property string _nvidiaGpuCommand: "command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi --query-gpu=name,utilization.gpu,clocks.current.graphics,temperature.gpu,memory.used,memory.total --format=csv,noheader,nounits 2>/dev/null"
+    readonly property string _nvidiaGpuProcessesCommand: "command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi --query-compute-apps=pid,process_name,used_memory --format=csv,noheader,nounits 2>/dev/null"
+    readonly property string _drmGpuProcessesCommand: "for p in /proc/[0-9]*; do pid=${p##*/}; name=$(cat \"$p/comm\" 2>/dev/null); mem=$(awk 'function flush() { if (vram > 0) { if (cid != \"\") { if (!(cid in seen)) { total += vram; seen[cid] = 1 } } else { total += vram } } cid = \"\"; vram = 0 } FILENAME != file { flush(); file = FILENAME } /^drm-client-id:/ { cid = $2 } /^drm-memory-vram:/ { vram += $2 } END { flush(); if (total > 0) printf \"%.1f\", total / 1024 }' \"$p\"/fdinfo/* 2>/dev/null); if [ -n \"$mem\" ]; then echo \"$pid,$name,$mem\"; fi; done | sort -t, -k3,3nr | head -5"
+    readonly property string _sysfsGpuCommand: "for d in /sys/class/drm/card*/device; do if [ -f \"$d/gpu_busy_percent\" ]; then card=$(basename $(dirname \"$d\")); pci=$(basename $(readlink -f \"$d\")); name=$(lspci -D -s \"$pci\" 2>/dev/null | sed 's/^[^ ]* //; s/.*: //'); busy=$(cat \"$d/gpu_busy_percent\" 2>/dev/null); clock=\"\"; if [ -f \"$d/gt_cur_freq_mhz\" ]; then clock=$(cat \"$d/gt_cur_freq_mhz\" 2>/dev/null); elif [ -f \"$d/pp_dpm_sclk\" ]; then clock=$(grep '\\*' \"$d/pp_dpm_sclk\" 2>/dev/null | sed 's/.*: *//; s/[mM][hH][zZ].*//'); fi; temp=\"\"; for h in \"$d\"/hwmon/hwmon*; do if [ -f \"$h/temp1_input\" ]; then temp=$(cat \"$h/temp1_input\" 2>/dev/null); temp=$((temp / 1000)); break; fi; done; vramUsed=\"\"; vramTotal=\"\"; if [ -f \"$d/mem_info_vram_used\" ]; then vramUsed=$(cat \"$d/mem_info_vram_used\" 2>/dev/null); vramUsed=$((vramUsed / 1048576)); fi; if [ -f \"$d/mem_info_vram_total\" ]; then vramTotal=$(cat \"$d/mem_info_vram_total\" 2>/dev/null); vramTotal=$((vramTotal / 1048576)); fi; echo \"$card|$pci|$name|$busy|$clock|$temp|$vramUsed|$vramTotal\"; fi; done"
 
     //  Helpers 
     readonly property color themeHoverColor: withAlpha(Kirigami.Theme.textColor, 0.06)
@@ -90,6 +108,7 @@ PlasmoidItem {
         case "network": return "Network"
         case "storage": return "Storage"
         case "temps": return "Temperatures"
+        case "gpu": return "GPU"
         }
         return "System Monitor"
     }
@@ -114,8 +133,10 @@ PlasmoidItem {
                 : "Storage usage unavailable"
         case "temps":
             return compactTemperaturesSummary()
+        case "gpu":
+            return gpuTooltipSummary()
         }
-        return "CPU, RAM, Network, Storage and Temperatures"
+        return "CPU, RAM, GPU, Network, Storage and Temperatures"
     }
 
     function openSystemResourceMonitor() {
@@ -177,6 +198,49 @@ PlasmoidItem {
         return formatCpuClock(cpuCoreClocks[coreName] || 0)
     }
 
+    function gpuNameText() {
+        if (gpuDevices.length > 1) return gpuDevices.length + " GPUs"
+        return gpuName || (gpus.length > 0 ? gpus[0] : "GPU")
+    }
+
+    function gpuUsageText() {
+        return gpuUsage >= 0 ? formatPercent(gpuUsage) : "unavailable"
+    }
+
+    function gpuClockText() {
+        return formatCpuClock(gpuClockMHz) || "unavailable"
+    }
+
+    function gpuTemperatureText() {
+        return gpuTemperature >= 0 ? gpuTemperature.toFixed(0) + " °C" : "unavailable"
+    }
+
+    function gpuMemoryText() {
+        if (gpuMemoryTotalMiB <= 0) return "unavailable"
+        return formatMemoryMib(gpuMemoryUsedMiB) + " / " + formatMemoryMib(gpuMemoryTotalMiB)
+    }
+
+    function gpuTooltipSummary() {
+        return "Usage " + gpuUsageText() + " @ " + gpuClockText() + " | " + gpuTemperatureText()
+    }
+
+    function gpuDeviceUsageText(device) {
+        return device && device.usage >= 0 ? formatPercent(device.usage) : "unavailable"
+    }
+
+    function gpuDeviceClockText(device) {
+        return device ? (formatCpuClock(device.clockMHz || 0) || "unavailable") : "unavailable"
+    }
+
+    function gpuDeviceMemoryText(device) {
+        if (!device || device.memoryTotalMiB <= 0) return "unavailable"
+        return formatMemoryMib(device.memoryUsedMiB) + " / " + formatMemoryMib(device.memoryTotalMiB)
+    }
+
+    function gpuDeviceTemperatureText(device) {
+        return device && device.temperature > 0 ? device.temperature.toFixed(0) + " °C" : "unavailable"
+    }
+
     function formatStorageBytes(bytes) {
         if (bytes < 1024) return bytes.toFixed(0) + " B"
         if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB"
@@ -208,7 +272,11 @@ PlasmoidItem {
         onNewData: function(src, data) {
             exe.disconnectSource(src)
             var out = data["stdout"] || ""
-            if (src.indexOf("/proc/stat") !== -1)          parseCpuStat(out)
+            if (src === _sysfsGpuCommand || src.indexOf("gpu_busy_percent") !== -1) parseSysfsGpu(out)
+            else if (src === _nvidiaGpuCommand || src.indexOf("--query-gpu") !== -1) parseNvidiaGpu(out)
+            else if (src === _nvidiaGpuProcessesCommand || src.indexOf("--query-compute-apps") !== -1) parseNvidiaGpuProcesses(out)
+            else if (src === _drmGpuProcessesCommand || src.indexOf("/proc/[0-9]") !== -1) parseDrmGpuProcesses(out)
+            else if (src.indexOf("/proc/stat") !== -1)          parseCpuStat(out)
             else if (src.indexOf("/proc/diskstats") !== -1) parseDiskStats(out)
             else if (src.indexOf("/proc/meminfo") !== -1)  parseMemInfo(out)
             else if (src.indexOf("/proc/net/dev") !== -1)  parseNetDev(out)
@@ -234,6 +302,10 @@ PlasmoidItem {
             exe.connectSource("cat /proc/net/dev")
             exe.connectSource("cat /proc/diskstats")
             exe.connectSource(_topProcessesCommand)
+            exe.connectSource(_nvidiaGpuCommand)
+            exe.connectSource(_nvidiaGpuProcessesCommand)
+            exe.connectSource(_drmGpuProcessesCommand)
+            exe.connectSource(_sysfsGpuCommand)
         }
     }
 
@@ -267,6 +339,10 @@ PlasmoidItem {
         exe.connectSource("lsblk -J -b -o NAME,SIZE,TYPE,MODEL,TRAN,RM 2>/dev/null")
         exe.connectSource("cat /proc/cpuinfo")
         exe.connectSource("lspci 2>/dev/null | grep -iE 'VGA|3D|Display' | sed 's/.*: //'")
+        exe.connectSource(_nvidiaGpuCommand)
+        exe.connectSource(_nvidiaGpuProcessesCommand)
+        exe.connectSource(_drmGpuProcessesCommand)
+        exe.connectSource(_sysfsGpuCommand)
     }
 
     //  Parsers 
@@ -511,9 +587,211 @@ PlasmoidItem {
     function parseGpu(raw) {
         var list = []
         raw.trim().split("\n").forEach(function(line) {
+            if (line.indexOf("|") !== -1) return
             if (line.trim()) list.push(line.trim())
         })
         gpus = list
+        if (!gpuName && list.length > 0) gpuName = list[0]
+        syncGpuDevices(false)
+    }
+
+    function updateGpuHistory(usage) {
+        var hist = gpuHistory.slice()
+        hist.push(Math.max(0, Math.min(1, usage / 100)))
+        if (hist.length > 60) hist.shift()
+        gpuHistory = hist
+    }
+
+    function syncGpuDevices(sampleHistory) {
+        var shouldSampleHistory = sampleHistory === true
+        var merged = _nvidiaGpuDevices.slice()
+
+        for (var i = 0; i < _sysfsGpuDevices.length; i++) {
+            var sysfsDevice = _sysfsGpuDevices[i]
+            var duplicate = false
+
+            for (var j = 0; j < merged.length; j++) {
+                if (merged[j].name === sysfsDevice.name || merged[j].id === sysfsDevice.id) {
+                    duplicate = true
+                    break
+                }
+            }
+
+            if (!duplicate) merged.push(sysfsDevice)
+        }
+
+        for (var k = 0; k < gpus.length; k++) {
+            var gpuLabel = gpus[k]
+            var normalizedLabel = gpuLabel.toLowerCase()
+            var isNvidiaPlaceholder = normalizedLabel.indexOf("nvidia") !== -1 && _nvidiaGpuDevices.length > 0
+            var represented = isNvidiaPlaceholder
+
+            for (var m = 0; m < merged.length && !represented; m++) {
+                var normalizedName = String(merged[m].name || "").toLowerCase()
+                represented = normalizedName.length > 0
+                    && (normalizedLabel.indexOf(normalizedName) !== -1 || normalizedName.indexOf(normalizedLabel) !== -1)
+            }
+
+            if (!represented) {
+                merged.push({
+                    id: "gpu" + k,
+                    name: gpuLabel,
+                    usage: 0,
+                    clockMHz: 0,
+                    temperature: 0,
+                    memoryUsedMiB: 0,
+                    memoryTotalMiB: 0
+                })
+            }
+        }
+
+        var updatedHistories = Object.assign({}, _gpuHistories)
+        for (var h = 0; h < merged.length; h++) {
+            var device = merged[h]
+            var historyKey = String(device.id || device.name || h)
+            var deviceHistory = (updatedHistories[historyKey] || []).slice()
+            if (shouldSampleHistory) {
+                deviceHistory.push(Math.max(0, Math.min(1, (device.usage || 0) / 100)))
+                if (deviceHistory.length > 60) deviceHistory.shift()
+            }
+            updatedHistories[historyKey] = deviceHistory
+            device.history = deviceHistory
+        }
+        _gpuHistories = updatedHistories
+
+        gpuDevices = merged
+
+        var summary = null
+        for (var l = 0; l < merged.length; l++) {
+            if (!summary || merged[l].usage > summary.usage) summary = merged[l]
+        }
+
+        if (summary) {
+            gpuName = summary.name
+            gpuUsage = Math.max(0, Math.min(100, summary.usage || 0))
+            gpuClockMHz = summary.clockMHz || 0
+            gpuTemperature = summary.temperature || 0
+            gpuMemoryUsedMiB = summary.memoryUsedMiB || 0
+            gpuMemoryTotalMiB = summary.memoryTotalMiB || 0
+            gpuHistory = summary.history || []
+        }
+    }
+
+    function parseNvidiaGpu(raw) {
+        var devices = []
+        raw.trim().split("\n").forEach(function(line, index) {
+            var parts = line.split(",")
+            if (parts.length < 6) return
+
+            devices.push({
+                id: "nvidia" + index,
+                name: parts[0].trim(),
+                usage: Math.max(0, Math.min(100, parseFloat(parts[1]) || 0)),
+                clockMHz: parseFloat(parts[2]) || 0,
+                temperature: parseFloat(parts[3]) || 0,
+                memoryUsedMiB: parseFloat(parts[4]) || 0,
+                memoryTotalMiB: parseFloat(parts[5]) || 0
+            })
+        })
+
+        _nvidiaGpuDevices = devices
+        syncGpuDevices(devices.length > 0)
+    }
+
+    function parseNvidiaGpuProcesses(raw) {
+        var processes = []
+        raw.trim().split("\n").forEach(function(line) {
+            var parts = line.split(",")
+            if (parts.length < 3) return
+
+            var pid = parseInt(parts[0]) || 0
+            var name = parts[1].trim()
+            var memoryMiB = parseFloat(parts[2]) || 0
+            if (pid > 0 && name.length > 0) {
+                processes.push({ pid: pid, name: name, memoryMiB: memoryMiB })
+            }
+        })
+        _nvidiaGpuProcesses = processes
+        syncGpuProcesses()
+    }
+
+    function parseDrmGpuProcesses(raw) {
+        var processes = []
+        raw.trim().split("\n").forEach(function(line) {
+            var parts = line.split(",")
+            if (parts.length < 3) return
+
+            var pid = parseInt(parts[0]) || 0
+            var name = parts[1].trim()
+            var memoryMiB = parseFloat(parts[2]) || 0
+            if (pid > 0 && name.length > 0) {
+                processes.push({ pid: pid, name: name, memoryMiB: memoryMiB })
+            }
+        })
+        _drmGpuProcesses = processes
+        syncGpuProcesses()
+    }
+
+    function syncGpuProcesses() {
+        var byPid = {}
+        var merged = []
+
+        function addProcesses(processes) {
+            for (var i = 0; i < processes.length; i++) {
+                var processInfo = processes[i]
+                var key = String(processInfo.pid)
+                if (byPid[key]) {
+                    byPid[key].memoryMiB = Math.max(byPid[key].memoryMiB, processInfo.memoryMiB)
+                } else {
+                    byPid[key] = {
+                        pid: processInfo.pid,
+                        name: processInfo.name,
+                        memoryMiB: processInfo.memoryMiB
+                    }
+                    merged.push(byPid[key])
+                }
+            }
+        }
+
+        addProcesses(_nvidiaGpuProcesses)
+        addProcesses(_drmGpuProcesses)
+
+        merged.sort(function(a, b) { return b.memoryMiB - a.memoryMiB })
+        gpuProcesses = merged.slice(0, 5)
+    }
+
+    function parseSysfsGpu(raw) {
+        var devices = []
+        raw.trim().split("\n").forEach(function(line, index) {
+            var parts = line.indexOf("|") !== -1 ? line.split("|") : line.split(",")
+            if (parts.length < 2) return
+
+            if (parts.length >= 8) {
+                devices.push({
+                    id: parts[1].trim() || parts[0].trim(),
+                    name: parts[2].trim() || parts[0].trim(),
+                    usage: Math.max(0, Math.min(100, parseFloat(parts[3]) || 0)),
+                    clockMHz: parseFloat(parts[4]) || 0,
+                    temperature: parseFloat(parts[5]) || 0,
+                    memoryUsedMiB: parseFloat(parts[6]) || 0,
+                    memoryTotalMiB: parseFloat(parts[7]) || 0
+                })
+                return
+            }
+
+            devices.push({
+                id: parts[0].trim(),
+                name: gpus[index] || parts[0].trim(),
+                usage: Math.max(0, Math.min(100, parseFloat(parts[1]) || 0)),
+                clockMHz: parseFloat(parts[2]) || 0,
+                temperature: parseFloat(parts[3]) || 0,
+                memoryUsedMiB: parseFloat(parts[4]) || 0,
+                memoryTotalMiB: parseFloat(parts[5]) || 0
+            })
+        })
+
+        _sysfsGpuDevices = devices
+        syncGpuDevices(devices.length > 0)
     }
 
     function parseCpuInfo(raw) {

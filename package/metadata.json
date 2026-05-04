@@ -7,10 +7,10 @@
             }
         ],
         "Category": "System Information",
-        "Description": "System Monitor panel widget with CPU, RAM, Network, Storage and Temperature sections",
+        "Description": "System Monitor panel widget with CPU, GPU, RAM, Network, Storage and Temperature sections",
         "Icon": "utilities-system-monitor",
         "Id": "com.github.sysmonitor",
-        "License": "GPL-2.0+",
+        "License": "GPL-3.0",
         "Name": "System Monitor",
         "Version": "1.0.0",
         "Website": ""

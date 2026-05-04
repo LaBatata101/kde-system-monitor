@@ -40,6 +40,22 @@ Item {
             Layout.fillWidth: true
         }
 
+        // GPU
+        DetailHeader {
+            visible: fullRoot.activeSection === 5 && plasmoid.configuration.showGpu
+            title: "GPU"
+            icon: "am-gpu-symbolic"
+            value: root.gpuUsageText()
+            barValue: root.gpuUsage / 100
+            barColor: root.gpuUsage > 85 ? "#ff4444" : "#00aaff"
+            showUsageRow: false
+        }
+
+        GpuDetail {
+            visible: fullRoot.activeSection === 5 && plasmoid.configuration.showGpu
+            Layout.fillWidth: true
+        }
+
         // RAM
         DetailHeader {
             visible: fullRoot.activeSection === 1 && plasmoid.configuration.showRam

@@ -21,13 +21,14 @@ Item {
     readonly property int hotspotVerticalPadding: Kirigami.Units.smallSpacing
     readonly property int arrowSz: Math.max(8, Kirigami.Units.iconSizes.small - 4)
     readonly property var coreColors: ["#00aaff", "#22cc66", "#ffaa00", "#aa66ff", "#ff6688", "#00ccbb"]
-    readonly property var defaultSectionOrder: ["temps", "network", "storage", "cpu", "ram"]
+    readonly property var defaultSectionOrder: ["temps", "network", "storage", "cpu", "gpu", "ram"]
     readonly property var visibleSectionKeys: enabledSectionKeys(
         plasmoid.configuration.sectionOrder,
         plasmoid.configuration.showTemps,
         plasmoid.configuration.showNetwork,
         plasmoid.configuration.showStorage,
         plasmoid.configuration.showCpu,
+        plasmoid.configuration.showGpu,
         plasmoid.configuration.showRam
     )
 
@@ -61,22 +62,23 @@ Item {
         return result
     }
 
-    function sectionEnabled(key, showTemps, showNetwork, showStorage, showCpu, showRam) {
+    function sectionEnabled(key, showTemps, showNetwork, showStorage, showCpu, showGpu, showRam) {
         switch (key) {
         case "temps": return showTemps
         case "network": return showNetwork
         case "storage": return showStorage
         case "cpu": return showCpu
+        case "gpu": return showGpu
         case "ram": return showRam
         }
         return false
     }
 
-    function enabledSectionKeys(order, showTemps, showNetwork, showStorage, showCpu, showRam) {
+    function enabledSectionKeys(order, showTemps, showNetwork, showStorage, showCpu, showGpu, showRam) {
         var keys = normalizedSectionOrder(order)
         var result = []
         for (var i = 0; i < keys.length; i++) {
-            if (sectionEnabled(keys[i], showTemps, showNetwork, showStorage, showCpu, showRam)) {
+            if (sectionEnabled(keys[i], showTemps, showNetwork, showStorage, showCpu, showGpu, showRam)) {
                 result.push(keys[i])
             }
         }
@@ -89,6 +91,7 @@ Item {
         case "network": return networkSection
         case "storage": return storageSection
         case "cpu": return cpuSection
+        case "gpu": return gpuSection
         case "ram": return ramSection
         }
         return null
@@ -536,6 +539,84 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     onClicked: root.openSection(0)
+                }
+            }
+        }
+    }
+
+    Component {
+        id: gpuSection
+
+        Rectangle {
+            implicitWidth: gpuContent.implicitWidth + compactRoot.hotspotHorizontalPadding * 2
+            implicitHeight: Math.max(compactRoot.iconSz, gpuContent.implicitHeight) + compactRoot.hotspotVerticalPadding * 2
+            radius: 3
+            color: gpuToolTipArea.containsMouse ? root.themeHoverColor : "transparent"
+
+            RowLayout {
+                id: gpuContent
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.leftMargin: compactRoot.hotspotHorizontalPadding
+                anchors.rightMargin: compactRoot.hotspotHorizontalPadding
+                spacing: Kirigami.Units.smallSpacing
+
+                SvgIcon {
+                    name: "am-gpu-symbolic"
+                    implicitWidth: compactRoot.iconSz
+                    implicitHeight: compactRoot.iconSz
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                Item {
+                    implicitWidth: Math.round(compactRoot.iconSz * 0.7)
+                    implicitHeight: compactRoot.iconSz
+                    Layout.alignment: Qt.AlignVCenter
+
+                    Rectangle {
+                        anchors.fill: parent
+                        color: "transparent"
+                        border.color: root.themeBorderColor
+                        border.width: 1
+                        radius: 2
+
+                        Rectangle {
+                            anchors { bottom: parent.bottom; left: parent.left; right: parent.right; margins: 1 }
+                            height: Math.max(0, (parent.height - 2) * (root.gpuUsage / 100))
+                            color: root.gpuUsage > 85 ? "#ff4444" : "#00aaff"
+                            radius: 1
+                            Behavior on height { NumberAnimation { duration: 300 } }
+                        }
+                    }
+                }
+
+                Text {
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.preferredWidth: gpuPctRef.implicitWidth
+                    Layout.minimumWidth: gpuPctRef.implicitWidth
+                    horizontalAlignment: Text.AlignLeft
+                    text: root.formatPercent(root.gpuUsage)
+                    font.pixelSize: compactRoot.labelPx
+                    font.bold: true
+                    color: Kirigami.Theme.textColor
+
+                    Text { id: gpuPctRef; visible: false; text: "100%"; font.pixelSize: compactRoot.labelPx; font.bold: true }
+                }
+            }
+
+            PlasmaCore.ToolTipArea {
+                id: gpuToolTipArea
+                anchors.fill: parent
+                mainText: compactRoot.sectionTitle("gpu")
+                subText: compactRoot.sectionSummary("gpu")
+                location: Plasmoid.location
+                active: !root.expanded
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: root.openSection(5)
                 }
             }
         }

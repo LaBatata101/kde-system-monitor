@@ -12,18 +12,20 @@ KCM.SimpleKCM {
     property alias cfg_showNetwork: showNetwork.checked
     property alias cfg_showStorage: showStorage.checked
     property alias cfg_showTemps: showTemps.checked
+    property alias cfg_showGpu: showGpu.checked
     property alias cfg_updateInterval: updateInterval.value
-    property string cfg_sectionOrder: "temps,network,storage,cpu,ram"
+    property string cfg_sectionOrder: "temps,network,storage,cpu,gpu,ram"
 
     property bool cfg_showCpuDefault
     property bool cfg_showRamDefault
     property bool cfg_showNetworkDefault
     property bool cfg_showStorageDefault
     property bool cfg_showTempsDefault
+    property bool cfg_showGpuDefault
     property int cfg_updateIntervalDefault
     property string cfg_sectionOrderDefault
 
-    readonly property var defaultSectionOrder: ["temps", "network", "storage", "cpu", "ram"]
+    readonly property var defaultSectionOrder: ["temps", "network", "storage", "cpu", "gpu", "ram"]
     property bool updatingSectionOrder: false
 
     function sectionLabel(key) {
@@ -33,6 +35,7 @@ KCM.SimpleKCM {
         case "network": return "Network"
         case "storage": return "Storage"
         case "temps": return "Temperatures"
+        case "gpu": return "GPU"
         }
         return key
     }
@@ -117,6 +120,11 @@ KCM.SimpleKCM {
             QQC2.Switch {
                 id: showTemps
                 text: "Temperatures"
+            }
+
+            QQC2.Switch {
+                id: showGpu
+                text: "GPU"
             }
 
             QQC2.SpinBox {
