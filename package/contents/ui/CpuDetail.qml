@@ -1,20 +1,22 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Window
-import org.kde.plasma.components as PlasmaComponents
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.components as PlasmaComponents
 
 ColumnLayout {
     id: cpuDetailRoot
 
-    spacing: Kirigami.Units.smallSpacing
-    Layout.fillWidth: true
+    required property var parentRef
+
     readonly property int axisLabelGap: 2
     readonly property int axisLabelWidth: axisLabelSizer.implicitWidth
 
     function showCoreInfoPopup() {
         coreInfoCloseTimer.stop();
-        var pos = cpuHistoryArea.mapToGlobal(Qt.point(cpuHistoryArea.width + Kirigami.Units.smallSpacing, 0));
+        let pos = cpuHistoryArea.mapToGlobal(Qt.point(cpuHistoryArea.width + Kirigami.Units.smallSpacing, 0));
         coreInfoWindow.x = pos.x;
         coreInfoWindow.y = pos.y;
         coreInfoWindow.visible = true;
@@ -25,15 +27,18 @@ ColumnLayout {
     }
 
     function updateCoreInfoPopup() {
-        if (cpuHistoryHover.hovered || coreInfoPopupHover.hovered) {
-            showCoreInfoPopup();
-        } else {
-            scheduleCoreInfoPopupClose();
-        }
+        if (cpuHistoryHover.hovered || coreInfoPopupHover.hovered)
+            cpuDetailRoot.showCoreInfoPopup();
+        else
+            cpuDetailRoot.scheduleCoreInfoPopupClose();
     }
+
+    spacing: Kirigami.Units.smallSpacing
+    Layout.fillWidth: true
 
     Text {
         id: axisLabelSizer
+
         visible: false
         text: "100%"
         font.pixelSize: 10
@@ -42,7 +47,7 @@ ColumnLayout {
     // CPU Model
     PlasmaComponents.Label {
         Layout.fillWidth: true
-        text: (root.cpuModel || "CPU") + (root.cpuClockMHz > 0 ? " @ " + root.cpuClockText() : "")
+        text: (cpuDetailRoot.parentRef.cpuModel || "CPU") + (cpuDetailRoot.parentRef.cpuClockMHz > 0 ? " @ " + cpuDetailRoot.parentRef.cpuClockText() : "")
         elide: Text.ElideRight
         horizontalAlignment: Text.AlignHCenter
         font.pixelSize: 11
@@ -57,44 +62,52 @@ ColumnLayout {
         ColumnLayout {
             spacing: 2
             Layout.fillWidth: true
+
             StatRow {
                 label: "Total:"
-                value: root.cpuTotal.toFixed(0) + "%"
+                value: cpuDetailRoot.parentRef.cpuTotal.toFixed(0) + "%"
             }
+
             StatRow {
                 label: "User:"
-                value: root.cpuUser.toFixed(0) + "%"
+                value: cpuDetailRoot.parentRef.cpuUser.toFixed(0) + "%"
             }
+
             StatRow {
                 label: "System:"
-                value: root.cpuSystem.toFixed(0) + "%"
+                value: cpuDetailRoot.parentRef.cpuSystem.toFixed(0) + "%"
             }
         }
     }
 
     // Overall usage
     Item {
+        id: cpuUsageRow
+
+        readonly property int rightInset: cpuDetailRoot.axisLabelWidth + cpuDetailRoot.axisLabelGap
+
         Layout.fillWidth: true
         Layout.leftMargin: Kirigami.Units.smallSpacing
         Layout.rightMargin: Kirigami.Units.smallSpacing
         Layout.preferredHeight: 16
         Layout.minimumHeight: 16
 
-        readonly property int rightInset: axisLabelWidth + axisLabelGap
-
         Rectangle {
+            id: cpuUsageTrack
+
             x: 0
-            anchors.verticalCenter: parent.verticalCenter
-            width: Math.max(0, parent.width - parent.rightInset)
+            anchors.verticalCenter: cpuUsageRow.verticalCenter
+            width: Math.max(0, cpuUsageRow.width - cpuUsageRow.rightInset)
             height: 6
             radius: 3
-            color: root.themeTrackColor
+            color: cpuDetailRoot.parentRef.themeTrackColor
 
             Rectangle {
-                width: parent.width * Math.min(1, Math.max(0, root.cpuTotal / 100))
-                height: parent.height
+                width: cpuUsageTrack.width * Math.min(1, Math.max(0, cpuDetailRoot.parentRef.cpuTotal / 100))
+                height: cpuUsageTrack.height
                 radius: 3
-                color: root.cpuTotal > 80 ? "#ff4444" : "#00aaff"
+                color: cpuDetailRoot.parentRef.cpuTotal > 80 ? "#ff4444" : "#00aaff"
+
                 Behavior on width {
                     NumberAnimation {
                         duration: 300
@@ -104,10 +117,10 @@ ColumnLayout {
         }
 
         PlasmaComponents.Label {
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            width: axisLabelWidth
-            text: root.cpuTotal.toFixed(0) + "%"
+            anchors.right: cpuUsageRow.right
+            anchors.verticalCenter: cpuUsageRow.verticalCenter
+            width: cpuDetailRoot.axisLabelWidth
+            text: cpuDetailRoot.parentRef.cpuTotal.toFixed(0) + "%"
             font.pixelSize: 10
             horizontalAlignment: Text.AlignLeft
             elide: Text.ElideRight
@@ -125,79 +138,71 @@ ColumnLayout {
 
         HoverHandler {
             id: cpuHistoryHover
-            onHoveredChanged: updateCoreInfoPopup()
+
+            onHoveredChanged: cpuDetailRoot.updateCoreInfoPopup()
         }
 
         Item {
+            id: cpuGraphContainer
+
             Layout.fillWidth: true
             Layout.preferredHeight: 58
             Layout.minimumHeight: 58
 
             Rectangle {
-                anchors.fill: parent
+                anchors.fill: cpuGraphContainer
                 anchors.margins: -Math.round(Kirigami.Units.smallSpacing / 2)
                 radius: 4
-                color: cpuHistoryHover.hovered ? root.themeHoverColor : "transparent"
+                color: cpuHistoryHover.hovered ? cpuDetailRoot.parentRef.themeHoverColor : "transparent"
             }
 
             Canvas {
                 id: cpuGraph
-                anchors.fill: parent
+
                 property color themeTextColor: Kirigami.Theme.textColor
 
-                onThemeTextColorChanged: requestPaint()
-
-                Connections {
-                    target: root
-                    function onCpuHistoryChanged() {
-                        cpuGraph.requestPaint();
-                    }
-                }
-
+                anchors.fill: cpuGraphContainer
+                onThemeTextColorChanged: cpuGraph.requestPaint()
                 onPaint: {
-                    var ctx = getContext("2d");
-                    var rightInset = axisLabelWidth + axisLabelGap;
-                    var plotWidth = Math.max(0, width - rightInset);
-                    ctx.clearRect(0, 0, width, height);
-
+                    let ctx = cpuGraph.getContext("2d");
+                    let rightInset = cpuDetailRoot.axisLabelWidth + cpuDetailRoot.axisLabelGap;
+                    let plotWidth = Math.max(0, cpuGraph.width - rightInset);
+                    ctx.clearRect(0, 0, cpuGraph.width, cpuGraph.height);
                     // Background
-                    ctx.fillStyle = root.themeGraphBackgroundColor;
-                    ctx.fillRect(0, 0, plotWidth, height);
-
+                    ctx.fillStyle = cpuDetailRoot.parentRef.themeGraphBackgroundColor;
+                    ctx.fillRect(0, 0, plotWidth, cpuGraph.height);
                     // Grid lines
-                    ctx.strokeStyle = root.themeGraphGridColor;
+                    ctx.strokeStyle = cpuDetailRoot.parentRef.themeGraphGridColor;
                     ctx.lineWidth = 1;
-                    for (var g = 0.25; g <= 1.0; g += 0.25) {
+                    for (let g = 0.25; g <= 1; g += 0.25) {
                         ctx.beginPath();
-                        ctx.moveTo(0, height * (1 - g));
-                        ctx.lineTo(plotWidth, height * (1 - g));
+                        ctx.moveTo(0, cpuGraph.height * (1 - g));
+                        ctx.lineTo(plotWidth, cpuGraph.height * (1 - g));
                         ctx.stroke();
                     }
-
-                    var history = root.cpuHistory;
+                    let history = cpuDetailRoot.parentRef.cpuHistory;
                     if (history.length < 2)
                         return;
 
                     // Fill area
                     ctx.fillStyle = Qt.rgba(0, 0.6, 1, 0.2);
                     ctx.beginPath();
-                    ctx.moveTo(0, height);
-                    for (var i = 0; i < history.length; i++) {
-                        var x = i / (history.length - 1) * plotWidth;
-                        var y = height - history[i] * height;
+                    ctx.moveTo(0, cpuGraph.height);
+                    for (let i = 0; i < history.length; i++) {
+                        let x = i / (history.length - 1) * plotWidth;
+                        let y = cpuGraph.height - history[i] * cpuGraph.height;
                         ctx.lineTo(x, y);
                     }
-                    ctx.lineTo(plotWidth, height);
+                    ctx.lineTo(plotWidth, cpuGraph.height);
                     ctx.closePath();
                     ctx.fill();
-
                     // Line
                     ctx.strokeStyle = "#00aaff";
                     ctx.lineWidth = 1.5;
                     ctx.beginPath();
-                    for (var j = 0; j < history.length; j++) {
-                        var x2 = j / (history.length - 1) * plotWidth;
-                        var y2 = height - history[j] * height;
+                    for (let j = 0; j < history.length; j++) {
+                        let x2 = j / (history.length - 1) * plotWidth;
+                        let y2 = cpuGraph.height - history[j] * cpuGraph.height;
                         if (j === 0)
                             ctx.moveTo(x2, y2);
                         else
@@ -205,38 +210,50 @@ ColumnLayout {
                     }
                     ctx.stroke();
                 }
+
+                Connections {
+                    function onCpuHistoryChanged() {
+                        cpuGraph.requestPaint();
+                    }
+
+                    target: cpuDetailRoot.parentRef
+                }
             }
 
             ColumnLayout {
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                anchors.right: parent.right
-                width: axisLabelWidth
+                anchors.top: cpuGraphContainer.top
+                anchors.bottom: cpuGraphContainer.bottom
+                anchors.right: cpuGraphContainer.right
+                width: cpuDetailRoot.axisLabelWidth
 
                 Text {
                     Layout.fillWidth: true
                     text: "100%"
-                    color: root.themeGraphLabelColor
+                    color: cpuDetailRoot.parentRef.themeGraphLabelColor
                     font.pixelSize: 9
                     horizontalAlignment: Text.AlignLeft
                 }
+
                 Item {
                     Layout.fillHeight: true
                 }
+
                 Text {
                     Layout.fillWidth: true
                     text: "50%"
-                    color: root.themeGraphLabelColor
+                    color: cpuDetailRoot.parentRef.themeGraphLabelColor
                     font.pixelSize: 9
                     horizontalAlignment: Text.AlignLeft
                 }
+
                 Item {
                     Layout.fillHeight: true
                 }
+
                 Text {
                     Layout.fillWidth: true
                     text: "0%"
-                    color: root.themeGraphLabelColor
+                    color: cpuDetailRoot.parentRef.themeGraphLabelColor
                     font.pixelSize: 9
                     horizontalAlignment: Text.AlignLeft
                 }
@@ -247,30 +264,32 @@ ColumnLayout {
             Layout.fillWidth: true
 
             Item {
+                id: cpuXAxisContainer
+
                 Layout.fillWidth: true
                 Layout.preferredHeight: 10
                 Layout.minimumHeight: 10
 
                 Rectangle {
-                    anchors.fill: parent
+                    anchors.fill: cpuXAxisContainer
                     anchors.leftMargin: -Math.round(Kirigami.Units.smallSpacing / 2)
                     anchors.rightMargin: -Math.round(Kirigami.Units.smallSpacing / 2)
                     radius: 4
-                    color: cpuHistoryHover.hovered ? root.themeHoverColor : "transparent"
+                    color: cpuHistoryHover.hovered ? cpuDetailRoot.parentRef.themeHoverColor : "transparent"
                 }
 
                 Text {
-                    anchors.left: parent.left
+                    anchors.left: cpuXAxisContainer.left
                     text: "5 mins ago"
-                    color: root.themeGraphLabelColor
+                    color: cpuDetailRoot.parentRef.themeGraphLabelColor
                     font.pixelSize: 9
                 }
 
                 Text {
-                    anchors.right: parent.right
-                    anchors.rightMargin: axisLabelWidth + axisLabelGap
+                    anchors.right: cpuXAxisContainer.right
+                    anchors.rightMargin: cpuDetailRoot.axisLabelWidth + cpuDetailRoot.axisLabelGap
                     text: "now"
-                    color: root.themeGraphLabelColor
+                    color: cpuDetailRoot.parentRef.themeGraphLabelColor
                     font.pixelSize: 9
                 }
             }
@@ -287,26 +306,32 @@ ColumnLayout {
     }
 
     Repeater {
-        model: root.topProcesses.length
+        model: cpuDetailRoot.parentRef.topProcesses.length
+
         delegate: RowLayout {
+            id: cpuProcessRow
+
+            required property int index
+
+            readonly property var processInfo: cpuDetailRoot.parentRef.topProcesses[cpuProcessRow.index] || ({
+                    "name": "",
+                    "cpu": 0
+                })
+
             Layout.fillWidth: true
             Layout.leftMargin: Kirigami.Units.smallSpacing
             Layout.rightMargin: Kirigami.Units.smallSpacing
 
-            readonly property var processInfo: root.topProcesses[index] || ({
-                    name: "",
-                    cpu: 0
-                })
-
             PlasmaComponents.Label {
-                text: processInfo.name
+                text: cpuProcessRow.processInfo.name
                 Layout.fillWidth: true
                 font.bold: true
                 font.pixelSize: 11
                 elide: Text.ElideRight
             }
+
             PlasmaComponents.Label {
-                text: processInfo.cpu.toFixed(1) + "%"
+                text: cpuProcessRow.processInfo.cpu.toFixed(1) + "%"
                 font.pixelSize: 11
                 horizontalAlignment: Text.AlignRight
             }
@@ -320,15 +345,20 @@ ColumnLayout {
         text: "GPUs"
         font.bold: true
         font.pixelSize: 12
-        visible: root.gpus.length > 0
+        visible: cpuDetailRoot.parentRef.gpus.length > 0
     }
 
     Repeater {
-        model: root.gpus
+        model: cpuDetailRoot.parentRef.gpus
+
         delegate: PlasmaComponents.Label {
+            id: gpuLabel
+
+            required property string modelData
+
             Layout.fillWidth: true
             Layout.leftMargin: Kirigami.Units.smallSpacing
-            text: modelData
+            text: gpuLabel.modelData
             font.pixelSize: 10
             elide: Text.ElideRight
             horizontalAlignment: Text.AlignHCenter
@@ -347,7 +377,7 @@ ColumnLayout {
     PlasmaComponents.Label {
         Layout.fillWidth: true
         horizontalAlignment: Text.AlignHCenter
-        text: root.systemUptime || "..."
+        text: cpuDetailRoot.parentRef.systemUptime || "..."
         font.pixelSize: 10
     }
 
@@ -361,33 +391,36 @@ ColumnLayout {
         color: "transparent"
 
         Rectangle {
-            anchors.fill: parent
+            anchors.fill: coreInfoWindow.contentItem
             color: Kirigami.Theme.backgroundColor
-            border.color: root.themeBorderColor
+            border.color: cpuDetailRoot.parentRef.themeBorderColor
             border.width: 1
             radius: 4
         }
 
         CpuCoreInfo {
             id: coreInfoContent
-            anchors.fill: parent
+
+            parentRef: cpuDetailRoot.parentRef
+            anchors.fill: coreInfoWindow.contentItem
             anchors.margins: Kirigami.Units.smallSpacing
 
             HoverHandler {
                 id: coreInfoPopupHover
-                onHoveredChanged: updateCoreInfoPopup()
+
+                onHoveredChanged: cpuDetailRoot.updateCoreInfoPopup()
             }
         }
     }
 
     Timer {
         id: coreInfoCloseTimer
+
         interval: 200
         repeat: false
         onTriggered: {
-            if (!cpuHistoryHover.hovered && !coreInfoPopupHover.hovered) {
+            if (!cpuHistoryHover.hovered && !coreInfoPopupHover.hovered)
                 coreInfoWindow.visible = false;
-            }
         }
     }
 }

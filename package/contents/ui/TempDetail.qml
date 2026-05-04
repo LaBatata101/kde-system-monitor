@@ -1,9 +1,15 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Layouts
-import org.kde.plasma.components as PlasmaComponents
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.components as PlasmaComponents
 
 ColumnLayout {
+    id: tempDetailRoot
+
+    required property var parentRef
+
     spacing: Kirigami.Units.smallSpacing
     Layout.fillWidth: true
 
@@ -12,9 +18,13 @@ ColumnLayout {
     }
 
     Repeater {
-        model: root.temperatures
+        model: tempDetailRoot.parentRef.temperatures
 
         delegate: RowLayout {
+            id: temperatureRow
+
+            required property var modelData
+
             Layout.fillWidth: true
             Layout.leftMargin: Kirigami.Units.smallSpacing
             Layout.rightMargin: Kirigami.Units.smallSpacing
@@ -26,7 +36,7 @@ ColumnLayout {
             }
 
             PlasmaComponents.Label {
-                text: modelData.label
+                text: temperatureRow.modelData.label
                 Layout.fillWidth: true
                 font.pixelSize: 11
                 elide: Text.ElideRight
@@ -34,22 +44,27 @@ ColumnLayout {
 
             // Temp bar
             Item {
+                id: temperatureBar
+
                 width: 60
                 height: 12
 
                 Rectangle {
-                    anchors.fill: parent
-                    color: root.themeTrackColor
+                    id: temperatureTrack
+
+                    anchors.fill: temperatureBar
+                    color: tempDetailRoot.parentRef.themeTrackColor
                     radius: 3
 
                     Rectangle {
-                        anchors.left: parent.left
-                        anchors.top: parent.top
-                        anchors.bottom: parent.bottom
+                        anchors.left: temperatureTrack.left
+                        anchors.top: temperatureTrack.top
+                        anchors.bottom: temperatureTrack.bottom
                         anchors.margins: 1
-                        width: (parent.width - 2) * Math.min(1, modelData.value / 110)
-                        color: modelData.value > 90 ? "#ff4444" : modelData.value > 75 ? "#ffaa00" : "#00aaff"
+                        width: (temperatureTrack.width - 2) * Math.min(1, temperatureRow.modelData.value / 110)
+                        color: temperatureRow.modelData.value > 90 ? "#ff4444" : temperatureRow.modelData.value > 75 ? "#ffaa00" : "#00aaff"
                         radius: 2
+
                         Behavior on width {
                             NumberAnimation {
                                 duration: 300
@@ -60,14 +75,16 @@ ColumnLayout {
             }
 
             PlasmaComponents.Label {
-                text: modelData.value.toFixed(1) + " °C"
+                text: temperatureRow.modelData.value.toFixed(1) + " °C"
                 font.pixelSize: 11
                 font.bold: true
                 color: {
-                    if (modelData.value > 90)
+                    if (temperatureRow.modelData.value > 90)
                         return "#ff4444";
-                    if (modelData.value > 75)
+
+                    if (temperatureRow.modelData.value > 75)
                         return "#ffaa00";
+
                     return Kirigami.Theme.textColor;
                 }
                 horizontalAlignment: Text.AlignRight
@@ -77,7 +94,7 @@ ColumnLayout {
     }
 
     PlasmaComponents.Label {
-        visible: root.temperatures.length === 0
+        visible: tempDetailRoot.parentRef.temperatures.length === 0
         Layout.fillWidth: true
         horizontalAlignment: Text.AlignHCenter
         text: "Install lm-sensors for temperature data"

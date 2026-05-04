@@ -1,34 +1,38 @@
 import QtQuick
 import QtQuick.Layouts
-import org.kde.plasma.plasmoid
-import org.kde.plasma.components as PlasmaComponents
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.components as PlasmaComponents
+import org.kde.plasma.plasmoid
 
 Item {
     id: fullRoot
 
+    required property var parentRef
+
+    readonly property int activeSection: fullRoot.parentRef.selectedSection >= 0 ? fullRoot.parentRef.selectedSection : 0
+
     // Fixed popup width; height grows with the selected section content.
     implicitWidth: Kirigami.Units.gridUnit * 20
     implicitHeight: mainColumn.implicitHeight
-    Layout.minimumWidth: implicitWidth
-    Layout.preferredWidth: implicitWidth
-    Layout.maximumWidth: implicitWidth
-    Layout.minimumHeight: implicitHeight
-    Layout.preferredHeight: implicitHeight
-    Layout.maximumHeight: implicitHeight
-
-    readonly property int activeSection: root.selectedSection >= 0 ? root.selectedSection : 0
+    Layout.minimumWidth: fullRoot.implicitWidth
+    Layout.preferredWidth: fullRoot.implicitWidth
+    Layout.maximumWidth: fullRoot.implicitWidth
+    Layout.minimumHeight: fullRoot.implicitHeight
+    Layout.preferredHeight: fullRoot.implicitHeight
+    Layout.maximumHeight: fullRoot.implicitHeight
 
     ColumnLayout {
         id: mainColumn
-        anchors.left: parent.left
-        anchors.right: parent.right
-        anchors.top: parent.top
-        height: implicitHeight
+
+        anchors.left: fullRoot.left
+        anchors.right: fullRoot.right
+        anchors.top: fullRoot.top
+        height: mainColumn.implicitHeight
         spacing: 0
 
         // CPU
         DetailHeader {
+            parentRef: fullRoot.parentRef
             visible: fullRoot.activeSection === 0
             title: "CPU"
             icon: ""
@@ -36,85 +40,96 @@ Item {
         }
 
         CpuDetail {
+            parentRef: fullRoot.parentRef
             visible: fullRoot.activeSection === 0
             Layout.fillWidth: true
         }
 
         // GPU
         DetailHeader {
-            visible: fullRoot.activeSection === 5 && plasmoid.configuration.showGpu
+            parentRef: fullRoot.parentRef
+            visible: fullRoot.activeSection === 5 && Plasmoid.configuration.showGpu
             title: "GPU"
             icon: "am-gpu-symbolic"
-            value: root.gpuUsageText()
-            barValue: root.gpuUsage / 100
-            barColor: root.gpuUsage > 85 ? "#ff4444" : "#00aaff"
+            value: fullRoot.parentRef.gpuUsageText()
+            barValue: fullRoot.parentRef.gpuUsage / 100
+            barColor: fullRoot.parentRef.gpuUsage > 85 ? "#ff4444" : "#00aaff"
             showUsageRow: false
         }
 
         GpuDetail {
-            visible: fullRoot.activeSection === 5 && plasmoid.configuration.showGpu
+            parentRef: fullRoot.parentRef
+            visible: fullRoot.activeSection === 5 && Plasmoid.configuration.showGpu
             Layout.fillWidth: true
         }
 
         // RAM
         DetailHeader {
-            visible: fullRoot.activeSection === 1 && plasmoid.configuration.showRam
+            parentRef: fullRoot.parentRef
+            visible: fullRoot.activeSection === 1 && Plasmoid.configuration.showRam
             title: "RAM"
             icon: "am-memory-symbolic"
-            value: root.ramTotal > 0 ? (root.ramUsed / 1024).toFixed(1) + " / " + (root.ramTotal / 1024).toFixed(1) + " GB" : "..."
-            barValue: root.ramTotal > 0 ? root.ramUsed / root.ramTotal : 0
-            barColor: root.ramTotal > 0 && (root.ramUsed / root.ramTotal) > 0.85 ? "#ff4444" : "#00aaff"
+            value: fullRoot.parentRef.ramTotal > 0 ? (fullRoot.parentRef.ramUsed / 1024).toFixed(1) + " / " + (fullRoot.parentRef.ramTotal / 1024).toFixed(1) + " GB" : "..."
+            barValue: fullRoot.parentRef.ramTotal > 0 ? fullRoot.parentRef.ramUsed / fullRoot.parentRef.ramTotal : 0
+            barColor: fullRoot.parentRef.ramTotal > 0 && (fullRoot.parentRef.ramUsed / fullRoot.parentRef.ramTotal) > 0.85 ? "#ff4444" : "#00aaff"
             showUsageRow: false
         }
 
         RamDetail {
-            visible: fullRoot.activeSection === 1 && plasmoid.configuration.showRam
+            parentRef: fullRoot.parentRef
+            visible: fullRoot.activeSection === 1 && Plasmoid.configuration.showRam
             Layout.fillWidth: true
         }
 
         // Network
         DetailHeader {
+            parentRef: fullRoot.parentRef
             visible: fullRoot.activeSection === 2
             title: "Network"
             icon: "am-network-symbolic"
-            value: "↑ " + root.netUploadSpeed + "  ↓ " + root.netDownloadSpeed
+            value: "↑ " + fullRoot.parentRef.netUploadSpeed + "  ↓ " + fullRoot.parentRef.netDownloadSpeed
             showBar: false
             showUsageRow: false
         }
 
         NetworkDetail {
+            parentRef: fullRoot.parentRef
             visible: fullRoot.activeSection === 2
             Layout.fillWidth: true
         }
 
         // Storage
         DetailHeader {
+            parentRef: fullRoot.parentRef
             visible: fullRoot.activeSection === 3
             title: "Storage"
             icon: "am-harddisk-symbolic"
-            value: root.storageDevices.length > 0 ? root.storageDevices[0].used + " / " + root.storageDevices[0].size : "..."
-            barValue: root.storageDevices.length > 0 ? root.storageDevices[0].percent / 100 : 0
-            barColor: root.storageDevices.length > 0 && root.storageDevices[0].percent > 85 ? "#ff4444" : "#00aaff"
+            value: fullRoot.parentRef.storageDevices.length > 0 ? fullRoot.parentRef.storageDevices[0].used + " / " + fullRoot.parentRef.storageDevices[0].size : "..."
+            barValue: fullRoot.parentRef.storageDevices.length > 0 ? fullRoot.parentRef.storageDevices[0].percent / 100 : 0
+            barColor: fullRoot.parentRef.storageDevices.length > 0 && fullRoot.parentRef.storageDevices[0].percent > 85 ? "#ff4444" : "#00aaff"
             showUsageRow: false
         }
 
         StorageDetail {
+            parentRef: fullRoot.parentRef
             visible: fullRoot.activeSection === 3
             Layout.fillWidth: true
         }
 
         // Temperatures
         DetailHeader {
+            parentRef: fullRoot.parentRef
             visible: fullRoot.activeSection === 4
             title: "Temperatures"
             icon: "am-temperature-symbolic"
-            value: root.temperatures.length > 0 ? root.temperatures[0].value.toFixed(1) + " °C" : "N/A"
-            barValue: root.temperatures.length > 0 ? root.temperatures[0].value / 100 : 0
-            barColor: root.temperatures.length > 0 && root.temperatures[0].value > 80 ? "#ff4444" : "#ffaa00"
+            value: fullRoot.parentRef.temperatures.length > 0 ? fullRoot.parentRef.temperatures[0].value.toFixed(1) + " °C" : "N/A"
+            barValue: fullRoot.parentRef.temperatures.length > 0 ? fullRoot.parentRef.temperatures[0].value / 100 : 0
+            barColor: fullRoot.parentRef.temperatures.length > 0 && fullRoot.parentRef.temperatures[0].value > 80 ? "#ff4444" : "#ffaa00"
             showUsageRow: false
         }
 
         TempDetail {
+            parentRef: fullRoot.parentRef
             visible: fullRoot.activeSection === 4
             Layout.fillWidth: true
         }
@@ -131,27 +146,28 @@ Item {
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 2
                 Layout.preferredHeight: Kirigami.Units.gridUnit * 2
                 Accessible.name: "Open System Monitor"
-                onClicked: root.openSystemResourceMonitor()
+                onClicked: fullRoot.parentRef.openSystemResourceMonitor()
+                PlasmaComponents.ToolTip.text: systemMonitorButton.Accessible.name
 
                 HoverHandler {
                     cursorShape: Qt.PointingHandCursor
                 }
 
                 contentItem: Item {
+                    id: systemMonitorButtonContent
+
                     SvgIcon {
-                        anchors.centerIn: parent
+                        anchors.centerIn: systemMonitorButtonContent
                         width: Kirigami.Units.iconSizes.smallMedium
-                        height: width
+                        height: Kirigami.Units.iconSizes.smallMedium
                         name: "am-system-monitor-symbolic"
                     }
                 }
 
                 background: Rectangle {
                     radius: 3
-                    color: systemMonitorButton.hovered ? root.themeHoverColor : "transparent"
+                    color: systemMonitorButton.hovered ? fullRoot.parentRef.themeHoverColor : "transparent"
                 }
-
-                PlasmaComponents.ToolTip.text: Accessible.name
             }
 
             PlasmaComponents.ToolButton {
@@ -160,27 +176,28 @@ Item {
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 2
                 Layout.preferredHeight: Kirigami.Units.gridUnit * 2
                 Accessible.name: "Configure Plasmoid"
-                onClicked: root.openConfigurationWindow()
+                onClicked: fullRoot.parentRef.openConfigurationWindow()
+                PlasmaComponents.ToolTip.text: settingsButton.Accessible.name
 
                 HoverHandler {
                     cursorShape: Qt.PointingHandCursor
                 }
 
                 contentItem: Item {
+                    id: settingsButtonContent
+
                     SvgIcon {
-                        anchors.centerIn: parent
+                        anchors.centerIn: settingsButtonContent
                         width: Kirigami.Units.iconSizes.smallMedium
-                        height: width
+                        height: Kirigami.Units.iconSizes.smallMedium
                         name: "am-settings-symbolic"
                     }
                 }
 
                 background: Rectangle {
                     radius: 3
-                    color: settingsButton.hovered ? root.themeHoverColor : "transparent"
+                    color: settingsButton.hovered ? fullRoot.parentRef.themeHoverColor : "transparent"
                 }
-
-                PlasmaComponents.ToolTip.text: Accessible.name
             }
         }
     }

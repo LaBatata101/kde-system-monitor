@@ -1,18 +1,24 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Layouts
-import org.kde.plasma.components as PlasmaComponents
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.components as PlasmaComponents
 
 ColumnLayout {
     id: gpuDetailRoot
 
-    spacing: Kirigami.Units.smallSpacing
-    Layout.fillWidth: true
+    required property var parentRef
+
     readonly property int axisLabelGap: 2
     readonly property int axisLabelWidth: axisLabelSizer.implicitWidth
 
+    spacing: Kirigami.Units.smallSpacing
+    Layout.fillWidth: true
+
     Text {
         id: axisLabelSizer
+
         visible: false
         text: "100%"
         font.pixelSize: 10
@@ -23,19 +29,23 @@ ColumnLayout {
     }
 
     Repeater {
-        model: root.gpuDevices.length > 0 ? root.gpuDevices : [
+        model: gpuDetailRoot.parentRef.gpuDevices.length > 0 ? gpuDetailRoot.parentRef.gpuDevices : [
             {
-                name: root.gpuNameText(),
-                usage: root.gpuUsage,
-                clockMHz: root.gpuClockMHz,
-                temperature: root.gpuTemperature,
-                memoryUsedMiB: root.gpuMemoryUsedMiB,
-                memoryTotalMiB: root.gpuMemoryTotalMiB,
-                history: root.gpuHistory
+                "name": gpuDetailRoot.parentRef.gpuNameText(),
+                "usage": gpuDetailRoot.parentRef.gpuUsage,
+                "clockMHz": gpuDetailRoot.parentRef.gpuClockMHz,
+                "temperature": gpuDetailRoot.parentRef.gpuTemperature,
+                "memoryUsedMiB": gpuDetailRoot.parentRef.gpuMemoryUsedMiB,
+                "memoryTotalMiB": gpuDetailRoot.parentRef.gpuMemoryTotalMiB,
+                "history": gpuDetailRoot.parentRef.gpuHistory
             }
         ]
 
         delegate: ColumnLayout {
+            id: gpuDeviceDelegate
+
+            required property var modelData
+
             Layout.fillWidth: true
             Layout.leftMargin: Kirigami.Units.smallSpacing
             Layout.rightMargin: Kirigami.Units.smallSpacing
@@ -43,7 +53,7 @@ ColumnLayout {
 
             PlasmaComponents.Label {
                 Layout.fillWidth: true
-                text: modelData.name
+                text: gpuDeviceDelegate.modelData.name
                 font.pixelSize: 11
                 font.bold: true
                 horizontalAlignment: Text.AlignHCenter
@@ -52,41 +62,49 @@ ColumnLayout {
 
             StatRow {
                 label: "Clock:"
-                value: root.gpuDeviceClockText(modelData)
+                value: gpuDetailRoot.parentRef.gpuDeviceClockText(gpuDeviceDelegate.modelData)
             }
+
             StatRow {
                 label: "Memory:"
-                value: root.gpuDeviceMemoryText(modelData)
+                value: gpuDetailRoot.parentRef.gpuDeviceMemoryText(gpuDeviceDelegate.modelData)
             }
+
             StatRow {
                 label: "Temperature:"
-                value: root.gpuDeviceTemperatureText(modelData)
+                value: gpuDetailRoot.parentRef.gpuDeviceTemperatureText(gpuDeviceDelegate.modelData)
             }
+
             StatRow {
                 label: "Usage:"
-                value: root.gpuDeviceUsageText(modelData)
+                value: gpuDetailRoot.parentRef.gpuDeviceUsageText(gpuDeviceDelegate.modelData)
             }
 
             Item {
+                id: gpuUsageRow
+
+                readonly property int rightInset: gpuDetailRoot.axisLabelWidth + gpuDetailRoot.axisLabelGap
+
                 Layout.fillWidth: true
                 Layout.preferredHeight: 16
                 Layout.minimumHeight: 16
 
-                readonly property int rightInset: axisLabelWidth + axisLabelGap
-
                 Rectangle {
+                    id: gpuUsageTrack
+
                     x: 0
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: Math.max(0, parent.width - parent.rightInset)
+                    anchors.verticalCenter: gpuUsageRow.verticalCenter
+                    width: Math.max(0, gpuUsageRow.width - gpuUsageRow.rightInset)
                     height: 6
                     radius: 3
-                    color: root.themeTrackColor
+                    color: gpuDetailRoot.parentRef.themeTrackColor
 
                     Rectangle {
-                        width: parent.width * Math.min(1, Math.max(0, (modelData.usage || 0) / 100))
-                        height: parent.height
+                        width: gpuUsageTrack.width * Math.min(1, Math.max(0, (gpuDeviceDelegate.modelData.usage || 0) / 100))
+                        height: gpuUsageTrack.height
                         radius: 3
-                        color: (modelData.usage || 0) > 85 ? "#ff4444" : "#00aaff"
+                        color: (gpuDeviceDelegate.modelData.usage || 0) > 85 ? "#ff4444" : "#00aaff"
+
                         Behavior on width {
                             NumberAnimation {
                                 duration: 300
@@ -96,10 +114,10 @@ ColumnLayout {
                 }
 
                 PlasmaComponents.Label {
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: axisLabelWidth
-                    text: (modelData.usage || 0).toFixed(0) + "%"
+                    anchors.right: gpuUsageRow.right
+                    anchors.verticalCenter: gpuUsageRow.verticalCenter
+                    width: gpuDetailRoot.axisLabelWidth
+                    text: (gpuDeviceDelegate.modelData.usage || 0).toFixed(0) + "%"
                     font.pixelSize: 10
                     horizontalAlignment: Text.AlignLeft
                     elide: Text.ElideRight
@@ -107,67 +125,58 @@ ColumnLayout {
             }
 
             Item {
+                id: gpuGraphContainer
+
                 Layout.fillWidth: true
                 Layout.preferredHeight: 80
                 Layout.minimumHeight: 80
 
                 Canvas {
                     id: gpuGraph
-                    anchors.fill: parent
+
                     property color themeTextColor: Kirigami.Theme.textColor
 
-                    onThemeTextColorChanged: requestPaint()
-
-                    Connections {
-                        target: root
-                        function onGpuDevicesChanged() {
-                            gpuGraph.requestPaint();
-                        }
-                    }
-
+                    anchors.fill: gpuGraphContainer
+                    onThemeTextColorChanged: gpuGraph.requestPaint()
                     onPaint: {
-                        var ctx = getContext("2d");
-                        var rightInset = axisLabelWidth + axisLabelGap;
-                        var plotWidth = Math.max(0, width - rightInset);
-                        ctx.clearRect(0, 0, width, height);
-
-                        ctx.fillStyle = root.themeGraphBackgroundColor;
-                        ctx.fillRect(0, 0, plotWidth, height);
-
-                        ctx.strokeStyle = root.themeGraphGridColor;
+                        let ctx = gpuGraph.getContext("2d");
+                        let rightInset = gpuDetailRoot.axisLabelWidth + gpuDetailRoot.axisLabelGap;
+                        let plotWidth = Math.max(0, gpuGraph.width - rightInset);
+                        ctx.clearRect(0, 0, gpuGraph.width, gpuGraph.height);
+                        ctx.fillStyle = gpuDetailRoot.parentRef.themeGraphBackgroundColor;
+                        ctx.fillRect(0, 0, plotWidth, gpuGraph.height);
+                        ctx.strokeStyle = gpuDetailRoot.parentRef.themeGraphGridColor;
                         ctx.lineWidth = 1;
-                        for (var g = 0.25; g <= 1.0; g += 0.25) {
+                        for (let g = 0.25; g <= 1; g += 0.25) {
                             ctx.beginPath();
-                            ctx.moveTo(0, height * (1 - g));
-                            ctx.lineTo(plotWidth, height * (1 - g));
+                            ctx.moveTo(0, gpuGraph.height * (1 - g));
+                            ctx.lineTo(plotWidth, gpuGraph.height * (1 - g));
                             ctx.stroke();
                         }
-
-                        ctx.strokeStyle = root.themeBorderColor;
+                        ctx.strokeStyle = gpuDetailRoot.parentRef.themeBorderColor;
                         ctx.lineWidth = 1;
-                        ctx.strokeRect(0.5, 0.5, plotWidth - 1, height - 1);
-
-                        var history = modelData.history || [];
+                        ctx.strokeRect(0.5, 0.5, plotWidth - 1, gpuGraph.height - 1);
+                        let history = gpuDeviceDelegate.modelData.history || [];
                         if (history.length < 2)
                             return;
+
                         ctx.fillStyle = Qt.rgba(0, 0.6, 1, 0.2);
                         ctx.beginPath();
-                        ctx.moveTo(0, height);
-                        for (var i = 0; i < history.length; i++) {
-                            var x = i / (history.length - 1) * plotWidth;
-                            var y = height - history[i] * height;
+                        ctx.moveTo(0, gpuGraph.height);
+                        for (let i = 0; i < history.length; i++) {
+                            let x = i / (history.length - 1) * plotWidth;
+                            let y = gpuGraph.height - history[i] * gpuGraph.height;
                             ctx.lineTo(x, y);
                         }
-                        ctx.lineTo(plotWidth, height);
+                        ctx.lineTo(plotWidth, gpuGraph.height);
                         ctx.closePath();
                         ctx.fill();
-
                         ctx.strokeStyle = "#00aaff";
                         ctx.lineWidth = 1.5;
                         ctx.beginPath();
-                        for (var j = 0; j < history.length; j++) {
-                            var x2 = j / (history.length - 1) * plotWidth;
-                            var y2 = height - history[j] * height;
+                        for (let j = 0; j < history.length; j++) {
+                            let x2 = j / (history.length - 1) * plotWidth;
+                            let y2 = gpuGraph.height - history[j] * gpuGraph.height;
                             if (j === 0)
                                 ctx.moveTo(x2, y2);
                             else
@@ -175,38 +184,50 @@ ColumnLayout {
                         }
                         ctx.stroke();
                     }
+
+                    Connections {
+                        function onGpuDevicesChanged() {
+                            gpuGraph.requestPaint();
+                        }
+
+                        target: gpuDetailRoot.parentRef
+                    }
                 }
 
                 ColumnLayout {
-                    anchors.top: parent.top
-                    anchors.bottom: parent.bottom
-                    anchors.right: parent.right
-                    width: axisLabelWidth
+                    anchors.top: gpuGraphContainer.top
+                    anchors.bottom: gpuGraphContainer.bottom
+                    anchors.right: gpuGraphContainer.right
+                    width: gpuDetailRoot.axisLabelWidth
 
                     Text {
                         Layout.fillWidth: true
                         text: "100%"
-                        color: root.themeGraphLabelColor
+                        color: gpuDetailRoot.parentRef.themeGraphLabelColor
                         font.pixelSize: 9
                         horizontalAlignment: Text.AlignLeft
                     }
+
                     Item {
                         Layout.fillHeight: true
                     }
+
                     Text {
                         Layout.fillWidth: true
                         text: "50%"
-                        color: root.themeGraphLabelColor
+                        color: gpuDetailRoot.parentRef.themeGraphLabelColor
                         font.pixelSize: 9
                         horizontalAlignment: Text.AlignLeft
                     }
+
                     Item {
                         Layout.fillHeight: true
                     }
+
                     Text {
                         Layout.fillWidth: true
                         text: "0%"
-                        color: root.themeGraphLabelColor
+                        color: gpuDetailRoot.parentRef.themeGraphLabelColor
                         font.pixelSize: 9
                         horizontalAlignment: Text.AlignLeft
                     }
@@ -219,7 +240,7 @@ ColumnLayout {
                 Text {
                     Layout.fillWidth: true
                     text: "GPU usage history"
-                    color: root.themeGraphLabelColor
+                    color: gpuDetailRoot.parentRef.themeGraphLabelColor
                     font.pixelSize: 9
                 }
 
@@ -229,6 +250,7 @@ ColumnLayout {
                     color: "#00aaff"
                     radius: 1
                 }
+
                 PlasmaComponents.Label {
                     text: "Usage"
                     font.pixelSize: 10
@@ -246,14 +268,19 @@ ColumnLayout {
     }
 
     Repeater {
-        model: root.gpuProcesses
+        model: gpuDetailRoot.parentRef.gpuProcesses
+
         delegate: RowLayout {
+            id: gpuProcessRow
+
+            required property var modelData
+
             Layout.fillWidth: true
             Layout.leftMargin: Kirigami.Units.smallSpacing
             Layout.rightMargin: Kirigami.Units.smallSpacing
 
             PlasmaComponents.Label {
-                text: modelData.name
+                text: gpuProcessRow.modelData.name
                 Layout.fillWidth: true
                 font.bold: true
                 font.pixelSize: 11
@@ -261,7 +288,7 @@ ColumnLayout {
             }
 
             PlasmaComponents.Label {
-                text: root.formatMemoryMib(modelData.memoryMiB)
+                text: gpuDetailRoot.parentRef.formatMemoryMib(gpuProcessRow.modelData.memoryMiB)
                 font.pixelSize: 11
                 horizontalAlignment: Text.AlignRight
             }

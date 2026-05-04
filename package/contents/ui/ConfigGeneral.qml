@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
@@ -47,18 +49,18 @@ KCM.SimpleKCM {
     }
 
     function normalizedSectionOrder(order) {
-        var result = [];
-        var seen = {};
-        var parts = String(order || "").split(",");
-        for (var i = 0; i < parts.length; i++) {
-            var key = parts[i].trim();
-            if (defaultSectionOrder.indexOf(key) !== -1 && !seen[key]) {
+        let result = [];
+        let seen = {};
+        let parts = String(order || "").split(",");
+        for (let i = 0; i < parts.length; i++) {
+            let key = parts[i].trim();
+            if (configGeneral.defaultSectionOrder.indexOf(key) !== -1 && !seen[key]) {
                 result.push(key);
                 seen[key] = true;
             }
         }
-        for (var j = 0; j < defaultSectionOrder.length; j++) {
-            var defaultKey = defaultSectionOrder[j];
+        for (let j = 0; j < configGeneral.defaultSectionOrder.length; j++) {
+            let defaultKey = configGeneral.defaultSectionOrder[j];
             if (!seen[defaultKey]) {
                 result.push(defaultKey);
             }
@@ -67,37 +69,37 @@ KCM.SimpleKCM {
     }
 
     function rebuildSectionOrderModel() {
-        if (updatingSectionOrder)
+        if (configGeneral.updatingSectionOrder)
             return;
         sectionOrderModel.clear();
-        var order = normalizedSectionOrder(cfg_sectionOrder);
-        for (var i = 0; i < order.length; i++) {
+        let order = configGeneral.normalizedSectionOrder(configGeneral.cfg_sectionOrder);
+        for (let i = 0; i < order.length; i++) {
             sectionOrderModel.append({
                 key: order[i],
-                label: sectionLabel(order[i])
+                label: configGeneral.sectionLabel(order[i])
             });
         }
     }
 
     function syncSectionOrderConfig() {
-        var order = [];
-        for (var i = 0; i < sectionOrderModel.count; i++) {
+        let order = [];
+        for (let i = 0; i < sectionOrderModel.count; i++) {
             order.push(sectionOrderModel.get(i).key);
         }
-        updatingSectionOrder = true;
-        cfg_sectionOrder = order.join(",");
-        updatingSectionOrder = false;
+        configGeneral.updatingSectionOrder = true;
+        configGeneral.cfg_sectionOrder = order.join(",");
+        configGeneral.updatingSectionOrder = false;
     }
 
     function moveSection(from, to) {
         if (to < 0 || to >= sectionOrderModel.count)
             return;
         sectionOrderModel.move(from, to, 1);
-        syncSectionOrderConfig();
+        configGeneral.syncSectionOrderConfig();
     }
 
-    onCfg_sectionOrderChanged: rebuildSectionOrderModel()
-    Component.onCompleted: rebuildSectionOrderModel()
+    onCfg_sectionOrderChanged: configGeneral.rebuildSectionOrderModel()
+    Component.onCompleted: configGeneral.rebuildSectionOrderModel()
 
     ListModel {
         id: sectionOrderModel
@@ -167,27 +169,32 @@ KCM.SimpleKCM {
                 model: sectionOrderModel
 
                 RowLayout {
+                    id: sectionOrderRow
+
+                    required property int index
+                    required property string label
+
                     Layout.fillWidth: true
                     spacing: Kirigami.Units.smallSpacing
 
                     QQC2.Label {
                         Layout.fillWidth: true
-                        text: model.label
+                        text: sectionOrderRow.label
                     }
 
                     QQC2.ToolButton {
-                        enabled: index > 0
+                        enabled: sectionOrderRow.index > 0
                         icon.name: "go-up-symbolic"
                         display: QQC2.AbstractButton.IconOnly
-                        onClicked: configGeneral.moveSection(index, index - 1)
+                        onClicked: configGeneral.moveSection(sectionOrderRow.index, sectionOrderRow.index - 1)
                         QQC2.ToolTip.text: "Move up"
                     }
 
                     QQC2.ToolButton {
-                        enabled: index < sectionOrderModel.count - 1
+                        enabled: sectionOrderRow.index < sectionOrderModel.count - 1
                         icon.name: "go-down-symbolic"
                         display: QQC2.AbstractButton.IconOnly
-                        onClicked: configGeneral.moveSection(index, index + 1)
+                        onClicked: configGeneral.moveSection(sectionOrderRow.index, sectionOrderRow.index + 1)
                         QQC2.ToolTip.text: "Move down"
                     }
                 }

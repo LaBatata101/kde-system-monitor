@@ -1,10 +1,12 @@
 import QtQuick
 import QtQuick.Layouts
-import org.kde.plasma.components as PlasmaComponents
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.components as PlasmaComponents
 
 ColumnLayout {
     id: detailHeader
+
+    required property var parentRef
 
     property string title: ""
     property string icon: ""
@@ -47,6 +49,8 @@ ColumnLayout {
         }
 
         Item {
+            id: barContainer
+
             visible: detailHeader.showBar
             Layout.fillWidth: true
             Layout.preferredHeight: 6
@@ -54,15 +58,18 @@ ColumnLayout {
             height: 6
 
             Rectangle {
-                anchors.fill: parent
+                id: barTrack
+
+                anchors.fill: barContainer
                 radius: 3
-                color: root.themeTrackColor
+                color: detailHeader.parentRef.themeTrackColor
 
                 Rectangle {
-                    width: parent.width * Math.min(1, Math.max(0, detailHeader.barValue))
-                    height: parent.height
+                    width: barTrack.width * Math.min(1, Math.max(0, detailHeader.barValue))
+                    height: barTrack.height
                     radius: 3
                     color: detailHeader.barColor
+
                     Behavior on width {
                         NumberAnimation {
                             duration: 300
@@ -73,10 +80,10 @@ ColumnLayout {
 
             PlasmaComponents.Label {
                 visible: detailHeader.valueInsideBar
-                anchors.fill: parent
+                anchors.fill: barContainer
                 anchors.rightMargin: 4
                 text: detailHeader.value
-                color: root.themeBarLabelColor
+                color: detailHeader.parentRef.themeBarLabelColor
                 font.pixelSize: 9
                 font.bold: true
                 horizontalAlignment: Text.AlignRight

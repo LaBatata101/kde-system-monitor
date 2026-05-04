@@ -1,18 +1,23 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Layouts
-import org.kde.plasma.components as PlasmaComponents
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.components as PlasmaComponents
 
 ColumnLayout {
     id: ramDetailRoot
 
-    spacing: Kirigami.Units.smallSpacing
-    Layout.fillWidth: true
+    required property var parentRef
+
     readonly property int axisLabelGap: 2
     readonly property int axisLabelWidth: axisLabelSizer.implicitWidth
 
+    spacing: Kirigami.Units.smallSpacing
+    Layout.fillWidth: true
+
     Text {
         id: axisLabelSizer
+
         visible: false
         text: "100%"
         font.pixelSize: 10
@@ -30,19 +35,22 @@ ColumnLayout {
 
         StatRow {
             label: "Total:"
-            value: root.ramTotal > 0 ? (root.ramTotal / 1024).toFixed(2) + " GB" : "..."
+            value: ramDetailRoot.parentRef.ramTotal > 0 ? (ramDetailRoot.parentRef.ramTotal / 1024).toFixed(2) + " GB" : "..."
         }
+
         StatRow {
             label: "Used:"
-            value: root.ramUsed > 0 ? (root.ramUsed / 1024).toFixed(2) + " GB" : "..."
+            value: ramDetailRoot.parentRef.ramUsed > 0 ? (ramDetailRoot.parentRef.ramUsed / 1024).toFixed(2) + " GB" : "..."
         }
+
         StatRow {
             label: "Free:"
-            value: root.ramFree > 0 ? (root.ramFree / 1024).toFixed(2) + " GB" : "..."
+            value: ramDetailRoot.parentRef.ramFree > 0 ? (ramDetailRoot.parentRef.ramFree / 1024).toFixed(2) + " GB" : "..."
         }
+
         StatRow {
             label: "Cached:"
-            value: root.ramCached > 0 ? (root.ramCached / 1024).toFixed(2) + " GB" : "..."
+            value: ramDetailRoot.parentRef.ramCached > 0 ? (ramDetailRoot.parentRef.ramCached / 1024).toFixed(2) + " GB" : "..."
         }
     }
 
@@ -54,63 +62,55 @@ ColumnLayout {
         spacing: 2
 
         Item {
+            id: ramGraphContainer
+
             Layout.fillWidth: true
             Layout.preferredHeight: 58
             Layout.minimumHeight: 58
 
             Canvas {
                 id: ramGraph
-                anchors.fill: parent
+
                 property color themeTextColor: Kirigami.Theme.textColor
 
-                onThemeTextColorChanged: requestPaint()
-
-                Connections {
-                    target: root
-                    function onRamHistoryChanged() {
-                        ramGraph.requestPaint();
-                    }
-                }
-
+                anchors.fill: ramGraphContainer
+                onThemeTextColorChanged: ramGraph.requestPaint()
                 onPaint: {
-                    var ctx = getContext("2d");
-                    var rightInset = axisLabelWidth + axisLabelGap;
-                    var plotWidth = Math.max(0, width - rightInset);
-                    ctx.clearRect(0, 0, width, height);
-
-                    ctx.fillStyle = root.themeGraphBackgroundColor;
-                    ctx.fillRect(0, 0, plotWidth, height);
-
-                    ctx.strokeStyle = root.themeGraphGridColor;
+                    let ctx = ramGraph.getContext("2d");
+                    let rightInset = ramDetailRoot.axisLabelWidth + ramDetailRoot.axisLabelGap;
+                    let plotWidth = Math.max(0, ramGraph.width - rightInset);
+                    ctx.clearRect(0, 0, ramGraph.width, ramGraph.height);
+                    ctx.fillStyle = ramDetailRoot.parentRef.themeGraphBackgroundColor;
+                    ctx.fillRect(0, 0, plotWidth, ramGraph.height);
+                    ctx.strokeStyle = ramDetailRoot.parentRef.themeGraphGridColor;
                     ctx.lineWidth = 1;
-                    for (var g = 0.25; g <= 1.0; g += 0.25) {
+                    for (let g = 0.25; g <= 1; g += 0.25) {
                         ctx.beginPath();
-                        ctx.moveTo(0, height * (1 - g));
-                        ctx.lineTo(plotWidth, height * (1 - g));
+                        ctx.moveTo(0, ramGraph.height * (1 - g));
+                        ctx.lineTo(plotWidth, ramGraph.height * (1 - g));
                         ctx.stroke();
                     }
-
-                    var history = root.ramHistory;
+                    let history = ramDetailRoot.parentRef.ramHistory;
                     if (history.length < 2)
                         return;
+
                     ctx.fillStyle = Qt.rgba(0, 0.6, 1, 0.2);
                     ctx.beginPath();
-                    ctx.moveTo(0, height);
-                    for (var i = 0; i < history.length; i++) {
-                        var x = i / (history.length - 1) * plotWidth;
-                        var y = height - history[i] * height;
+                    ctx.moveTo(0, ramGraph.height);
+                    for (let i = 0; i < history.length; i++) {
+                        let x = i / (history.length - 1) * plotWidth;
+                        let y = ramGraph.height - history[i] * ramGraph.height;
                         ctx.lineTo(x, y);
                     }
-                    ctx.lineTo(plotWidth, height);
+                    ctx.lineTo(plotWidth, ramGraph.height);
                     ctx.closePath();
                     ctx.fill();
-
                     ctx.strokeStyle = "#00aaff";
                     ctx.lineWidth = 1.5;
                     ctx.beginPath();
-                    for (var j = 0; j < history.length; j++) {
-                        var x2 = j / (history.length - 1) * plotWidth;
-                        var y2 = height - history[j] * height;
+                    for (let j = 0; j < history.length; j++) {
+                        let x2 = j / (history.length - 1) * plotWidth;
+                        let y2 = ramGraph.height - history[j] * ramGraph.height;
                         if (j === 0)
                             ctx.moveTo(x2, y2);
                         else
@@ -118,38 +118,50 @@ ColumnLayout {
                     }
                     ctx.stroke();
                 }
+
+                Connections {
+                    function onRamHistoryChanged() {
+                        ramGraph.requestPaint();
+                    }
+
+                    target: ramDetailRoot.parentRef
+                }
             }
 
             ColumnLayout {
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
-                anchors.right: parent.right
-                width: axisLabelWidth
+                anchors.top: ramGraphContainer.top
+                anchors.bottom: ramGraphContainer.bottom
+                anchors.right: ramGraphContainer.right
+                width: ramDetailRoot.axisLabelWidth
 
                 Text {
                     Layout.fillWidth: true
                     text: "100%"
-                    color: root.themeGraphLabelColor
+                    color: ramDetailRoot.parentRef.themeGraphLabelColor
                     font.pixelSize: 9
                     horizontalAlignment: Text.AlignLeft
                 }
+
                 Item {
                     Layout.fillHeight: true
                 }
+
                 Text {
                     Layout.fillWidth: true
                     text: "50%"
-                    color: root.themeGraphLabelColor
+                    color: ramDetailRoot.parentRef.themeGraphLabelColor
                     font.pixelSize: 9
                     horizontalAlignment: Text.AlignLeft
                 }
+
                 Item {
                     Layout.fillHeight: true
                 }
+
                 Text {
                     Layout.fillWidth: true
                     text: "0%"
-                    color: root.themeGraphLabelColor
+                    color: ramDetailRoot.parentRef.themeGraphLabelColor
                     font.pixelSize: 9
                     horizontalAlignment: Text.AlignLeft
                 }
@@ -160,22 +172,24 @@ ColumnLayout {
             Layout.fillWidth: true
 
             Item {
+                id: ramXAxisContainer
+
                 Layout.fillWidth: true
                 Layout.preferredHeight: 10
                 Layout.minimumHeight: 10
 
                 Text {
-                    anchors.left: parent.left
+                    anchors.left: ramXAxisContainer.left
                     text: "2 mins ago"
-                    color: root.themeGraphLabelColor
+                    color: ramDetailRoot.parentRef.themeGraphLabelColor
                     font.pixelSize: 9
                 }
 
                 Text {
-                    anchors.right: parent.right
-                    anchors.rightMargin: axisLabelWidth + axisLabelGap
+                    anchors.right: ramXAxisContainer.right
+                    anchors.rightMargin: ramDetailRoot.axisLabelWidth + ramDetailRoot.axisLabelGap
                     text: "now"
-                    color: root.themeGraphLabelColor
+                    color: ramDetailRoot.parentRef.themeGraphLabelColor
                     font.pixelSize: 9
                 }
             }
@@ -184,23 +198,27 @@ ColumnLayout {
 
     // RAM bar
     Item {
+        id: ramUsageBar
+
         Layout.fillWidth: true
         Layout.leftMargin: Kirigami.Units.smallSpacing
         Layout.rightMargin: Kirigami.Units.smallSpacing
         height: 16
 
         Rectangle {
-            anchors.fill: parent
-            color: root.themeTrackColor
+            id: ramUsageTrack
+
+            anchors.fill: ramUsageBar
+            color: ramDetailRoot.parentRef.themeTrackColor
             radius: 4
 
             Rectangle {
-                anchors.left: parent.left
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
+                anchors.left: ramUsageTrack.left
+                anchors.top: ramUsageTrack.top
+                anchors.bottom: ramUsageTrack.bottom
                 anchors.margins: 1
-                width: root.ramTotal > 0 ? (parent.width - 2) * (root.ramUsed / root.ramTotal) : 0
-                color: root.ramTotal > 0 && root.ramUsed / root.ramTotal > 0.85 ? "#ff4444" : "#00aaff"
+                width: ramDetailRoot.parentRef.ramTotal > 0 ? (ramUsageTrack.width - 2) * (ramDetailRoot.parentRef.ramUsed / ramDetailRoot.parentRef.ramTotal) : 0
+                color: ramDetailRoot.parentRef.ramTotal > 0 && ramDetailRoot.parentRef.ramUsed / ramDetailRoot.parentRef.ramTotal > 0.85 ? "#ff4444" : "#00aaff"
                 radius: 3
 
                 Behavior on width {
@@ -211,9 +229,9 @@ ColumnLayout {
             }
 
             Text {
-                anchors.centerIn: parent
-                text: root.ramTotal > 0 ? (root.ramUsed / root.ramTotal * 100).toFixed(0) + "%" : "0%"
-                color: root.themeBarLabelColor
+                anchors.centerIn: ramUsageTrack
+                text: ramDetailRoot.parentRef.ramTotal > 0 ? (ramDetailRoot.parentRef.ramUsed / ramDetailRoot.parentRef.ramTotal * 100).toFixed(0) + "%" : "0%"
+                color: ramDetailRoot.parentRef.themeBarLabelColor
                 font.pixelSize: 9
                 font.bold: true
             }
@@ -230,34 +248,41 @@ ColumnLayout {
     }
 
     Repeater {
-        model: root.ramTopProcesses.length
+        model: ramDetailRoot.parentRef.ramTopProcesses.length
+
         delegate: RowLayout {
+            id: ramProcessRow
+
+            required property int index
+
+            readonly property var processInfo: ramDetailRoot.parentRef.ramTopProcesses[ramProcessRow.index] || ({
+                    "name": "",
+                    "memory": 0,
+                    "memoryValue": "0 KB"
+                })
+
             Layout.fillWidth: true
             Layout.leftMargin: Kirigami.Units.smallSpacing
             Layout.rightMargin: Kirigami.Units.smallSpacing
 
-            readonly property var processInfo: root.ramTopProcesses[index] || ({
-                    name: "",
-                    memory: 0,
-                    memoryValue: "0 KB"
-                })
-
             PlasmaComponents.Label {
-                text: processInfo.name
+                text: ramProcessRow.processInfo.name
                 Layout.fillWidth: true
                 font.bold: true
                 font.pixelSize: 11
                 elide: Text.ElideRight
             }
+
             PlasmaComponents.Label {
-                text: processInfo.memoryValue
+                text: ramProcessRow.processInfo.memoryValue
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 4
                 font.pixelSize: 11
                 horizontalAlignment: Text.AlignRight
                 elide: Text.ElideRight
             }
+
             PlasmaComponents.Label {
-                text: processInfo.memory.toFixed(1) + "%"
+                text: ramProcessRow.processInfo.memory.toFixed(1) + "%"
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 2.5
                 font.pixelSize: 11
                 horizontalAlignment: Text.AlignRight
@@ -282,33 +307,39 @@ ColumnLayout {
 
         StatRow {
             label: "Total:"
-            value: root.swapTotal > 0 ? (root.swapTotal / 1024).toFixed(2) + " GB" : "None"
+            value: ramDetailRoot.parentRef.swapTotal > 0 ? (ramDetailRoot.parentRef.swapTotal / 1024).toFixed(2) + " GB" : "None"
         }
+
         StatRow {
             label: "Used:"
-            value: root.swapUsed > 0 ? (root.swapUsed / 1024).toFixed(2) + " GB" : "0 GB"
+            value: ramDetailRoot.parentRef.swapUsed > 0 ? (ramDetailRoot.parentRef.swapUsed / 1024).toFixed(2) + " GB" : "0 GB"
         }
     }
 
     Item {
+        id: swapUsageBar
+
         Layout.fillWidth: true
         Layout.leftMargin: Kirigami.Units.smallSpacing
         Layout.rightMargin: Kirigami.Units.smallSpacing
         height: 16
 
         Rectangle {
-            anchors.fill: parent
-            color: root.themeTrackColor
+            id: swapUsageTrack
+
+            anchors.fill: swapUsageBar
+            color: ramDetailRoot.parentRef.themeTrackColor
             radius: 4
 
             Rectangle {
-                anchors.left: parent.left
-                anchors.top: parent.top
-                anchors.bottom: parent.bottom
+                anchors.left: swapUsageTrack.left
+                anchors.top: swapUsageTrack.top
+                anchors.bottom: swapUsageTrack.bottom
                 anchors.margins: 1
-                width: root.swapTotal > 0 ? (parent.width - 2) * (root.swapUsed / root.swapTotal) : 0
+                width: ramDetailRoot.parentRef.swapTotal > 0 ? (swapUsageTrack.width - 2) * (ramDetailRoot.parentRef.swapUsed / ramDetailRoot.parentRef.swapTotal) : 0
                 color: "#ffaa00"
                 radius: 3
+
                 Behavior on width {
                     NumberAnimation {
                         duration: 300
@@ -317,9 +348,9 @@ ColumnLayout {
             }
 
             Text {
-                anchors.centerIn: parent
-                text: root.swapTotal > 0 ? (root.swapUsed / root.swapTotal * 100).toFixed(0) + "%" : "0%"
-                color: root.themeBarLabelColor
+                anchors.centerIn: swapUsageTrack
+                text: ramDetailRoot.parentRef.swapTotal > 0 ? (ramDetailRoot.parentRef.swapUsed / ramDetailRoot.parentRef.swapTotal * 100).toFixed(0) + "%" : "0%"
+                color: ramDetailRoot.parentRef.themeBarLabelColor
                 font.pixelSize: 9
                 font.bold: true
             }

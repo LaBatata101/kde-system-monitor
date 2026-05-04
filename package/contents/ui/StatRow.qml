@@ -1,21 +1,23 @@
 import QtQuick
 import QtQuick.Layouts
 import org.kde.plasma.components as PlasmaComponents
-import org.kde.kirigami as Kirigami
 
 RowLayout {
+    id: statRow
+
     property string label: ""
     property string value: ""
 
     Layout.fillWidth: true
 
     PlasmaComponents.Label {
-        text: label
+        text: statRow.label
         font.pixelSize: 11
         Layout.fillWidth: true
     }
+
     PlasmaComponents.Label {
-        text: value
+        text: statRow.value
         font.pixelSize: 11
         font.bold: true
         horizontalAlignment: Text.AlignRight
