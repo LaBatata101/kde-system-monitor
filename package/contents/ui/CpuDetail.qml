@@ -13,22 +13,22 @@ ColumnLayout {
     readonly property int axisLabelWidth: axisLabelSizer.implicitWidth
 
     function showCoreInfoPopup() {
-        coreInfoCloseTimer.stop()
-        var pos = cpuHistoryArea.mapToGlobal(Qt.point(cpuHistoryArea.width + Kirigami.Units.smallSpacing, 0))
-        coreInfoWindow.x = pos.x
-        coreInfoWindow.y = pos.y
-        coreInfoWindow.visible = true
+        coreInfoCloseTimer.stop();
+        var pos = cpuHistoryArea.mapToGlobal(Qt.point(cpuHistoryArea.width + Kirigami.Units.smallSpacing, 0));
+        coreInfoWindow.x = pos.x;
+        coreInfoWindow.y = pos.y;
+        coreInfoWindow.visible = true;
     }
 
     function scheduleCoreInfoPopupClose() {
-        coreInfoCloseTimer.restart()
+        coreInfoCloseTimer.restart();
     }
 
     function updateCoreInfoPopup() {
         if (cpuHistoryHover.hovered || coreInfoPopupHover.hovered) {
-            showCoreInfoPopup()
+            showCoreInfoPopup();
         } else {
-            scheduleCoreInfoPopupClose()
+            scheduleCoreInfoPopupClose();
         }
     }
 
@@ -57,9 +57,18 @@ ColumnLayout {
         ColumnLayout {
             spacing: 2
             Layout.fillWidth: true
-            StatRow { label: "Total:"; value: root.cpuTotal.toFixed(0) + "%" }
-            StatRow { label: "User:"; value: root.cpuUser.toFixed(0) + "%" }
-            StatRow { label: "System:"; value: root.cpuSystem.toFixed(0) + "%" }
+            StatRow {
+                label: "Total:"
+                value: root.cpuTotal.toFixed(0) + "%"
+            }
+            StatRow {
+                label: "User:"
+                value: root.cpuUser.toFixed(0) + "%"
+            }
+            StatRow {
+                label: "System:"
+                value: root.cpuSystem.toFixed(0) + "%"
+            }
         }
     }
 
@@ -86,7 +95,11 @@ ColumnLayout {
                 height: parent.height
                 radius: 3
                 color: root.cpuTotal > 80 ? "#ff4444" : "#00aaff"
-                Behavior on width { NumberAnimation { duration: 300 } }
+                Behavior on width {
+                    NumberAnimation {
+                        duration: 300
+                    }
+                }
             }
         }
 
@@ -136,56 +149,61 @@ ColumnLayout {
 
                 Connections {
                     target: root
-                    function onCpuHistoryChanged() { cpuGraph.requestPaint() }
+                    function onCpuHistoryChanged() {
+                        cpuGraph.requestPaint();
+                    }
                 }
 
                 onPaint: {
-                    var ctx = getContext("2d")
-                    var rightInset = axisLabelWidth + axisLabelGap
-                    var plotWidth = Math.max(0, width - rightInset)
-                    ctx.clearRect(0, 0, width, height)
+                    var ctx = getContext("2d");
+                    var rightInset = axisLabelWidth + axisLabelGap;
+                    var plotWidth = Math.max(0, width - rightInset);
+                    ctx.clearRect(0, 0, width, height);
 
                     // Background
-                    ctx.fillStyle = root.themeGraphBackgroundColor
-                    ctx.fillRect(0, 0, plotWidth, height)
+                    ctx.fillStyle = root.themeGraphBackgroundColor;
+                    ctx.fillRect(0, 0, plotWidth, height);
 
                     // Grid lines
-                    ctx.strokeStyle = root.themeGraphGridColor
-                    ctx.lineWidth = 1
+                    ctx.strokeStyle = root.themeGraphGridColor;
+                    ctx.lineWidth = 1;
                     for (var g = 0.25; g <= 1.0; g += 0.25) {
-                        ctx.beginPath()
-                        ctx.moveTo(0, height * (1 - g))
-                        ctx.lineTo(plotWidth, height * (1 - g))
-                        ctx.stroke()
+                        ctx.beginPath();
+                        ctx.moveTo(0, height * (1 - g));
+                        ctx.lineTo(plotWidth, height * (1 - g));
+                        ctx.stroke();
                     }
 
-                    var history = root.cpuHistory
-                    if (history.length < 2) return
+                    var history = root.cpuHistory;
+                    if (history.length < 2)
+                        return;
 
                     // Fill area
-                    ctx.fillStyle = Qt.rgba(0, 0.6, 1, 0.2)
-                    ctx.beginPath()
-                    ctx.moveTo(0, height)
+                    ctx.fillStyle = Qt.rgba(0, 0.6, 1, 0.2);
+                    ctx.beginPath();
+                    ctx.moveTo(0, height);
                     for (var i = 0; i < history.length; i++) {
-                        var x = i / (history.length - 1) * plotWidth
-                        var y = height - history[i] * height
-                        ctx.lineTo(x, y)
+                        var x = i / (history.length - 1) * plotWidth;
+                        var y = height - history[i] * height;
+                        ctx.lineTo(x, y);
                     }
-                    ctx.lineTo(plotWidth, height)
-                    ctx.closePath()
-                    ctx.fill()
+                    ctx.lineTo(plotWidth, height);
+                    ctx.closePath();
+                    ctx.fill();
 
                     // Line
-                    ctx.strokeStyle = "#00aaff"
-                    ctx.lineWidth = 1.5
-                    ctx.beginPath()
+                    ctx.strokeStyle = "#00aaff";
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
                     for (var j = 0; j < history.length; j++) {
-                        var x2 = j / (history.length - 1) * plotWidth
-                        var y2 = height - history[j] * height
-                        if (j === 0) ctx.moveTo(x2, y2)
-                        else ctx.lineTo(x2, y2)
+                        var x2 = j / (history.length - 1) * plotWidth;
+                        var y2 = height - history[j] * height;
+                        if (j === 0)
+                            ctx.moveTo(x2, y2);
+                        else
+                            ctx.lineTo(x2, y2);
                     }
-                    ctx.stroke()
+                    ctx.stroke();
                 }
             }
 
@@ -202,7 +220,9 @@ ColumnLayout {
                     font.pixelSize: 9
                     horizontalAlignment: Text.AlignLeft
                 }
-                Item { Layout.fillHeight: true }
+                Item {
+                    Layout.fillHeight: true
+                }
                 Text {
                     Layout.fillWidth: true
                     text: "50%"
@@ -210,7 +230,9 @@ ColumnLayout {
                     font.pixelSize: 9
                     horizontalAlignment: Text.AlignLeft
                 }
-                Item { Layout.fillHeight: true }
+                Item {
+                    Layout.fillHeight: true
+                }
                 Text {
                     Layout.fillWidth: true
                     text: "0%"
@@ -271,7 +293,10 @@ ColumnLayout {
             Layout.leftMargin: Kirigami.Units.smallSpacing
             Layout.rightMargin: Kirigami.Units.smallSpacing
 
-            readonly property var processInfo: root.topProcesses[index] || ({ name: "", cpu: 0 })
+            readonly property var processInfo: root.topProcesses[index] || ({
+                    name: "",
+                    cpu: 0
+                })
 
             PlasmaComponents.Label {
                 text: processInfo.name
@@ -329,10 +354,8 @@ ColumnLayout {
     Window {
         id: coreInfoWindow
 
-        width: Math.max(Kirigami.Units.gridUnit * 16,
-                        cpuDetailRoot.width - Kirigami.Units.smallSpacing * 2)
-        height: Math.min(coreInfoContent.implicitHeight + Kirigami.Units.smallSpacing * 2,
-                         Kirigami.Units.gridUnit * 18)
+        width: Math.max(Kirigami.Units.gridUnit * 16, cpuDetailRoot.width - Kirigami.Units.smallSpacing * 2)
+        height: Math.min(coreInfoContent.implicitHeight + Kirigami.Units.smallSpacing * 2, Kirigami.Units.gridUnit * 18)
         visible: false
         flags: Qt.ToolTip | Qt.FramelessWindowHint
         color: "transparent"
@@ -363,7 +386,7 @@ ColumnLayout {
         repeat: false
         onTriggered: {
             if (!cpuHistoryHover.hovered && !coreInfoPopupHover.hovered) {
-                coreInfoWindow.visible = false
+                coreInfoWindow.visible = false;
             }
         }
     }

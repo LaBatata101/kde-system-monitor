@@ -19,7 +19,9 @@ ColumnLayout {
     Layout.fillWidth: true
     spacing: Kirigami.Units.smallSpacing
 
-    Item { Layout.preferredHeight: Kirigami.Units.smallSpacing }
+    Item {
+        Layout.preferredHeight: Kirigami.Units.smallSpacing
+    }
 
     PlasmaComponents.Label {
         Layout.fillWidth: true
@@ -61,7 +63,11 @@ ColumnLayout {
                     height: parent.height
                     radius: 3
                     color: detailHeader.barColor
-                    Behavior on width { NumberAnimation { duration: 300 } }
+                    Behavior on width {
+                        NumberAnimation {
+                            duration: 300
+                        }
+                    }
                 }
             }
 

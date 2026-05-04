@@ -8,7 +8,7 @@ Item {
     id: fullRoot
 
     // Fixed popup width; height grows with the selected section content.
-    implicitWidth:  Kirigami.Units.gridUnit * 20
+    implicitWidth: Kirigami.Units.gridUnit * 20
     implicitHeight: mainColumn.implicitHeight
     Layout.minimumWidth: implicitWidth
     Layout.preferredWidth: implicitWidth
@@ -61,9 +61,7 @@ Item {
             visible: fullRoot.activeSection === 1 && plasmoid.configuration.showRam
             title: "RAM"
             icon: "am-memory-symbolic"
-            value: root.ramTotal > 0
-                ? (root.ramUsed / 1024).toFixed(1) + " / " + (root.ramTotal / 1024).toFixed(1) + " GB"
-                : "..."
+            value: root.ramTotal > 0 ? (root.ramUsed / 1024).toFixed(1) + " / " + (root.ramTotal / 1024).toFixed(1) + " GB" : "..."
             barValue: root.ramTotal > 0 ? root.ramUsed / root.ramTotal : 0
             barColor: root.ramTotal > 0 && (root.ramUsed / root.ramTotal) > 0.85 ? "#ff4444" : "#00aaff"
             showUsageRow: false
@@ -94,12 +92,9 @@ Item {
             visible: fullRoot.activeSection === 3
             title: "Storage"
             icon: "am-harddisk-symbolic"
-            value: root.storageDevices.length > 0
-                ? root.storageDevices[0].used + " / " + root.storageDevices[0].size
-                : "..."
+            value: root.storageDevices.length > 0 ? root.storageDevices[0].used + " / " + root.storageDevices[0].size : "..."
             barValue: root.storageDevices.length > 0 ? root.storageDevices[0].percent / 100 : 0
-            barColor: root.storageDevices.length > 0 && root.storageDevices[0].percent > 85
-                ? "#ff4444" : "#00aaff"
+            barColor: root.storageDevices.length > 0 && root.storageDevices[0].percent > 85 ? "#ff4444" : "#00aaff"
             showUsageRow: false
         }
 
@@ -113,12 +108,9 @@ Item {
             visible: fullRoot.activeSection === 4
             title: "Temperatures"
             icon: "am-temperature-symbolic"
-            value: root.temperatures.length > 0
-                ? root.temperatures[0].value.toFixed(1) + " °C"
-                : "N/A"
+            value: root.temperatures.length > 0 ? root.temperatures[0].value.toFixed(1) + " °C" : "N/A"
             barValue: root.temperatures.length > 0 ? root.temperatures[0].value / 100 : 0
-            barColor: root.temperatures.length > 0 && root.temperatures[0].value > 80
-                ? "#ff4444" : "#ffaa00"
+            barColor: root.temperatures.length > 0 && root.temperatures[0].value > 80 ? "#ff4444" : "#ffaa00"
             showUsageRow: false
         }
 

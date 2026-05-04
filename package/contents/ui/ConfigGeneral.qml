@@ -30,59 +30,70 @@ KCM.SimpleKCM {
 
     function sectionLabel(key) {
         switch (key) {
-        case "cpu": return "CPU"
-        case "ram": return "RAM"
-        case "network": return "Network"
-        case "storage": return "Storage"
-        case "temps": return "Temperatures"
-        case "gpu": return "GPU"
+        case "cpu":
+            return "CPU";
+        case "ram":
+            return "RAM";
+        case "network":
+            return "Network";
+        case "storage":
+            return "Storage";
+        case "temps":
+            return "Temperatures";
+        case "gpu":
+            return "GPU";
         }
-        return key
+        return key;
     }
 
     function normalizedSectionOrder(order) {
-        var result = []
-        var seen = {}
-        var parts = String(order || "").split(",")
+        var result = [];
+        var seen = {};
+        var parts = String(order || "").split(",");
         for (var i = 0; i < parts.length; i++) {
-            var key = parts[i].trim()
+            var key = parts[i].trim();
             if (defaultSectionOrder.indexOf(key) !== -1 && !seen[key]) {
-                result.push(key)
-                seen[key] = true
+                result.push(key);
+                seen[key] = true;
             }
         }
         for (var j = 0; j < defaultSectionOrder.length; j++) {
-            var defaultKey = defaultSectionOrder[j]
+            var defaultKey = defaultSectionOrder[j];
             if (!seen[defaultKey]) {
-                result.push(defaultKey)
+                result.push(defaultKey);
             }
         }
-        return result
+        return result;
     }
 
     function rebuildSectionOrderModel() {
-        if (updatingSectionOrder) return
-        sectionOrderModel.clear()
-        var order = normalizedSectionOrder(cfg_sectionOrder)
+        if (updatingSectionOrder)
+            return;
+        sectionOrderModel.clear();
+        var order = normalizedSectionOrder(cfg_sectionOrder);
         for (var i = 0; i < order.length; i++) {
-            sectionOrderModel.append({ key: order[i], label: sectionLabel(order[i]) })
+            sectionOrderModel.append({
+                key: order[i],
+                label: sectionLabel(order[i])
+            });
         }
     }
 
     function syncSectionOrderConfig() {
-        var order = []
+        var order = [];
         for (var i = 0; i < sectionOrderModel.count; i++) {
-            order.push(sectionOrderModel.get(i).key)
+            order.push(sectionOrderModel.get(i).key);
         }
-        updatingSectionOrder = true
-        cfg_sectionOrder = order.join(",")
-        updatingSectionOrder = false
+        updatingSectionOrder = true;
+        cfg_sectionOrder = order.join(",");
+        updatingSectionOrder = false;
     }
 
     function moveSection(from, to) {
-        if (to < 0 || to >= sectionOrderModel.count) return
-        sectionOrderModel.move(from, to, 1)
-        syncSectionOrderConfig()
+        if (to < 0 || to >= sectionOrderModel.count)
+            return;
+        sectionOrderModel.move(from, to, 1);
+        syncSectionOrderConfig();
     }
 
     onCfg_sectionOrderChanged: rebuildSectionOrderModel()
@@ -133,8 +144,12 @@ KCM.SimpleKCM {
                 to: 10000
                 stepSize: 500
                 editable: true
-                textFromValue: function(value) { return value + " ms" }
-                valueFromText: function(text) { return parseInt(text) || 2000 }
+                textFromValue: function (value) {
+                    return value + " ms";
+                }
+                valueFromText: function (text) {
+                    return parseInt(text) || 2000;
+                }
                 Kirigami.FormData.label: "Update interval:"
             }
         }

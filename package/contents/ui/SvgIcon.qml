@@ -9,12 +9,12 @@ Item {
 
     property string name: ""
 
-    implicitWidth:  Kirigami.Units.iconSizes.small
+    implicitWidth: Kirigami.Units.iconSizes.small
     implicitHeight: Kirigami.Units.iconSizes.small
 
     function svgPath(iconName) {
-        var path = String(Qt.resolvedUrl("../icons/hicolor/scalable/actions/" + iconName + ".svg"))
-        return path.indexOf("file://") === 0 ? path.substring(7) : path
+        var path = String(Qt.resolvedUrl("../icons/hicolor/scalable/actions/" + iconName + ".svg"));
+        return path.indexOf("file://") === 0 ? path.substring(7) : path;
     }
 
     PlasmaCore.Svg {

@@ -18,10 +18,22 @@ ColumnLayout {
         font.pixelSize: 10
     }
 
-    Item { height: Kirigami.Units.smallSpacing }
+    Item {
+        height: Kirigami.Units.smallSpacing
+    }
 
     Repeater {
-        model: root.gpuDevices.length > 0 ? root.gpuDevices : [{ name: root.gpuNameText(), usage: root.gpuUsage, clockMHz: root.gpuClockMHz, temperature: root.gpuTemperature, memoryUsedMiB: root.gpuMemoryUsedMiB, memoryTotalMiB: root.gpuMemoryTotalMiB, history: root.gpuHistory }]
+        model: root.gpuDevices.length > 0 ? root.gpuDevices : [
+            {
+                name: root.gpuNameText(),
+                usage: root.gpuUsage,
+                clockMHz: root.gpuClockMHz,
+                temperature: root.gpuTemperature,
+                memoryUsedMiB: root.gpuMemoryUsedMiB,
+                memoryTotalMiB: root.gpuMemoryTotalMiB,
+                history: root.gpuHistory
+            }
+        ]
 
         delegate: ColumnLayout {
             Layout.fillWidth: true
@@ -38,10 +50,22 @@ ColumnLayout {
                 wrapMode: Text.WordWrap
             }
 
-            StatRow { label: "Clock:"; value: root.gpuDeviceClockText(modelData) }
-            StatRow { label: "Memory:"; value: root.gpuDeviceMemoryText(modelData) }
-            StatRow { label: "Temperature:"; value: root.gpuDeviceTemperatureText(modelData) }
-            StatRow { label: "Usage:"; value: root.gpuDeviceUsageText(modelData) }
+            StatRow {
+                label: "Clock:"
+                value: root.gpuDeviceClockText(modelData)
+            }
+            StatRow {
+                label: "Memory:"
+                value: root.gpuDeviceMemoryText(modelData)
+            }
+            StatRow {
+                label: "Temperature:"
+                value: root.gpuDeviceTemperatureText(modelData)
+            }
+            StatRow {
+                label: "Usage:"
+                value: root.gpuDeviceUsageText(modelData)
+            }
 
             Item {
                 Layout.fillWidth: true
@@ -63,7 +87,11 @@ ColumnLayout {
                         height: parent.height
                         radius: 3
                         color: (modelData.usage || 0) > 85 ? "#ff4444" : "#00aaff"
-                        Behavior on width { NumberAnimation { duration: 300 } }
+                        Behavior on width {
+                            NumberAnimation {
+                                duration: 300
+                            }
+                        }
                     }
                 }
 
@@ -92,56 +120,60 @@ ColumnLayout {
 
                     Connections {
                         target: root
-                        function onGpuDevicesChanged() { gpuGraph.requestPaint() }
+                        function onGpuDevicesChanged() {
+                            gpuGraph.requestPaint();
+                        }
                     }
 
                     onPaint: {
-                        var ctx = getContext("2d")
-                        var rightInset = axisLabelWidth + axisLabelGap
-                        var plotWidth = Math.max(0, width - rightInset)
-                        ctx.clearRect(0, 0, width, height)
+                        var ctx = getContext("2d");
+                        var rightInset = axisLabelWidth + axisLabelGap;
+                        var plotWidth = Math.max(0, width - rightInset);
+                        ctx.clearRect(0, 0, width, height);
 
-                        ctx.fillStyle = root.themeGraphBackgroundColor
-                        ctx.fillRect(0, 0, plotWidth, height)
+                        ctx.fillStyle = root.themeGraphBackgroundColor;
+                        ctx.fillRect(0, 0, plotWidth, height);
 
-                        ctx.strokeStyle = root.themeGraphGridColor
-                        ctx.lineWidth = 1
+                        ctx.strokeStyle = root.themeGraphGridColor;
+                        ctx.lineWidth = 1;
                         for (var g = 0.25; g <= 1.0; g += 0.25) {
-                            ctx.beginPath()
-                            ctx.moveTo(0, height * (1 - g))
-                            ctx.lineTo(plotWidth, height * (1 - g))
-                            ctx.stroke()
+                            ctx.beginPath();
+                            ctx.moveTo(0, height * (1 - g));
+                            ctx.lineTo(plotWidth, height * (1 - g));
+                            ctx.stroke();
                         }
 
-                        ctx.strokeStyle = root.themeBorderColor
-                        ctx.lineWidth = 1
-                        ctx.strokeRect(0.5, 0.5, plotWidth - 1, height - 1)
+                        ctx.strokeStyle = root.themeBorderColor;
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(0.5, 0.5, plotWidth - 1, height - 1);
 
-                        var history = modelData.history || []
-                        if (history.length < 2) return
-
-                        ctx.fillStyle = Qt.rgba(0, 0.6, 1, 0.2)
-                        ctx.beginPath()
-                        ctx.moveTo(0, height)
+                        var history = modelData.history || [];
+                        if (history.length < 2)
+                            return;
+                        ctx.fillStyle = Qt.rgba(0, 0.6, 1, 0.2);
+                        ctx.beginPath();
+                        ctx.moveTo(0, height);
                         for (var i = 0; i < history.length; i++) {
-                            var x = i / (history.length - 1) * plotWidth
-                            var y = height - history[i] * height
-                            ctx.lineTo(x, y)
+                            var x = i / (history.length - 1) * plotWidth;
+                            var y = height - history[i] * height;
+                            ctx.lineTo(x, y);
                         }
-                        ctx.lineTo(plotWidth, height)
-                        ctx.closePath()
-                        ctx.fill()
+                        ctx.lineTo(plotWidth, height);
+                        ctx.closePath();
+                        ctx.fill();
 
-                        ctx.strokeStyle = "#00aaff"
-                        ctx.lineWidth = 1.5
-                        ctx.beginPath()
+                        ctx.strokeStyle = "#00aaff";
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
                         for (var j = 0; j < history.length; j++) {
-                            var x2 = j / (history.length - 1) * plotWidth
-                            var y2 = height - history[j] * height
-                            if (j === 0) ctx.moveTo(x2, y2)
-                            else ctx.lineTo(x2, y2)
+                            var x2 = j / (history.length - 1) * plotWidth;
+                            var y2 = height - history[j] * height;
+                            if (j === 0)
+                                ctx.moveTo(x2, y2);
+                            else
+                                ctx.lineTo(x2, y2);
                         }
-                        ctx.stroke()
+                        ctx.stroke();
                     }
                 }
 
@@ -158,7 +190,9 @@ ColumnLayout {
                         font.pixelSize: 9
                         horizontalAlignment: Text.AlignLeft
                     }
-                    Item { Layout.fillHeight: true }
+                    Item {
+                        Layout.fillHeight: true
+                    }
                     Text {
                         Layout.fillWidth: true
                         text: "50%"
@@ -166,7 +200,9 @@ ColumnLayout {
                         font.pixelSize: 9
                         horizontalAlignment: Text.AlignLeft
                     }
-                    Item { Layout.fillHeight: true }
+                    Item {
+                        Layout.fillHeight: true
+                    }
                     Text {
                         Layout.fillWidth: true
                         text: "0%"
@@ -187,8 +223,16 @@ ColumnLayout {
                     font.pixelSize: 9
                 }
 
-                Rectangle { width: 12; height: 3; color: "#00aaff"; radius: 1 }
-                PlasmaComponents.Label { text: "Usage"; font.pixelSize: 10 }
+                Rectangle {
+                    width: 12
+                    height: 3
+                    color: "#00aaff"
+                    radius: 1
+                }
+                PlasmaComponents.Label {
+                    text: "Usage"
+                    font.pixelSize: 10
+                }
             }
         }
     }
@@ -224,5 +268,7 @@ ColumnLayout {
         }
     }
 
-    Item { height: Kirigami.Units.smallSpacing }
+    Item {
+        height: Kirigami.Units.smallSpacing
+    }
 }

@@ -14,10 +14,10 @@ ColumnLayout {
 
     function formatAxisRate(bytes) {
         if (bytes < 1073741824) {
-            var mib = bytes / 1048576
-            return mib < 10 ? mib.toFixed(1) + " MB/s" : mib.toFixed(0) + " MB/s"
+            var mib = bytes / 1048576;
+            return mib < 10 ? mib.toFixed(1) + " MB/s" : mib.toFixed(0) + " MB/s";
         }
-        return (bytes / 1073741824).toFixed(1) + " GB/s"
+        return (bytes / 1073741824).toFixed(1) + " GB/s";
     }
 
     Text {
@@ -27,7 +27,9 @@ ColumnLayout {
         font.pixelSize: 10
     }
 
-    Item { height: Kirigami.Units.smallSpacing }
+    Item {
+        height: Kirigami.Units.smallSpacing
+    }
 
     // Storage read/write history graph
     ColumnLayout {
@@ -50,104 +52,110 @@ ColumnLayout {
 
                 Connections {
                     target: root
-                    function onStorageHistoryChanged() { storageGraph.requestPaint() }
+                    function onStorageHistoryChanged() {
+                        storageGraph.requestPaint();
+                    }
                 }
 
                 onPaint: {
-                    var ctx = getContext("2d")
-                    var rightInset = axisLabelWidth + axisLabelGap
-                    var plotWidth = Math.max(0, width - rightInset)
-                    var halfHeight = height / 2
-                    var dividerGap = 3
-                    var readBottom = halfHeight - dividerGap
-                    var readHeight = readBottom
-                    var writeTop = halfHeight + dividerGap
-                    var writeHeight = height - writeTop
-                    var scale = storageDetailRoot.axisScale
+                    var ctx = getContext("2d");
+                    var rightInset = axisLabelWidth + axisLabelGap;
+                    var plotWidth = Math.max(0, width - rightInset);
+                    var halfHeight = height / 2;
+                    var dividerGap = 3;
+                    var readBottom = halfHeight - dividerGap;
+                    var readHeight = readBottom;
+                    var writeTop = halfHeight + dividerGap;
+                    var writeHeight = height - writeTop;
+                    var scale = storageDetailRoot.axisScale;
 
-                    ctx.clearRect(0, 0, width, height)
+                    ctx.clearRect(0, 0, width, height);
 
-                    ctx.fillStyle = root.themeGraphBackgroundColor
-                    ctx.fillRect(0, 0, plotWidth, height)
+                    ctx.fillStyle = root.themeGraphBackgroundColor;
+                    ctx.fillRect(0, 0, plotWidth, height);
 
-                    ctx.strokeStyle = root.themeGraphGridColor
-                    ctx.lineWidth = 1
+                    ctx.strokeStyle = root.themeGraphGridColor;
+                    ctx.lineWidth = 1;
                     for (var g = 0.25; g <= 1.0; g += 0.25) {
-                        ctx.beginPath()
-                        ctx.moveTo(0, readBottom - readHeight * g)
-                        ctx.lineTo(plotWidth, readBottom - readHeight * g)
-                        ctx.stroke()
+                        ctx.beginPath();
+                        ctx.moveTo(0, readBottom - readHeight * g);
+                        ctx.lineTo(plotWidth, readBottom - readHeight * g);
+                        ctx.stroke();
 
-                        ctx.beginPath()
-                        ctx.moveTo(0, writeTop + writeHeight * (1 - g))
-                        ctx.lineTo(plotWidth, writeTop + writeHeight * (1 - g))
-                        ctx.stroke()
+                        ctx.beginPath();
+                        ctx.moveTo(0, writeTop + writeHeight * (1 - g));
+                        ctx.lineTo(plotWidth, writeTop + writeHeight * (1 - g));
+                        ctx.stroke();
                     }
 
-                    ctx.strokeStyle = root.themeBorderColor
-                    ctx.lineWidth = 1
-                    ctx.strokeRect(0.5, 0.5, plotWidth - 1, height - 1)
-                    ctx.beginPath()
-                    ctx.moveTo(0, halfHeight)
-                    ctx.lineTo(plotWidth, halfHeight)
-                    ctx.stroke()
+                    ctx.strokeStyle = root.themeBorderColor;
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(0.5, 0.5, plotWidth - 1, height - 1);
+                    ctx.beginPath();
+                    ctx.moveTo(0, halfHeight);
+                    ctx.lineTo(plotWidth, halfHeight);
+                    ctx.stroke();
 
-                    var history = root.storageHistory
-                    if (history.length < 2) return
-
-                    ctx.fillStyle = Qt.rgba(0, 0.6, 1, 0.2)
-                    ctx.beginPath()
-                    ctx.moveTo(0, readBottom)
+                    var history = root.storageHistory;
+                    if (history.length < 2)
+                        return;
+                    ctx.fillStyle = Qt.rgba(0, 0.6, 1, 0.2);
+                    ctx.beginPath();
+                    ctx.moveTo(0, readBottom);
                     for (var i = 0; i < history.length; i++) {
-                        var x = i / (history.length - 1) * plotWidth
-                        var y = readBottom - Math.min(1, history[i].read / scale) * readHeight
-                        ctx.lineTo(x, y)
+                        var x = i / (history.length - 1) * plotWidth;
+                        var y = readBottom - Math.min(1, history[i].read / scale) * readHeight;
+                        ctx.lineTo(x, y);
                     }
-                    ctx.lineTo(plotWidth, readBottom)
-                    ctx.closePath()
-                    ctx.fill()
+                    ctx.lineTo(plotWidth, readBottom);
+                    ctx.closePath();
+                    ctx.fill();
 
-                    ctx.strokeStyle = "#00aaff"
-                    ctx.lineWidth = 1.5
-                    ctx.beginPath()
+                    ctx.strokeStyle = "#00aaff";
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
                     for (var j = 0; j < history.length; j++) {
-                        var x2 = j / (history.length - 1) * plotWidth
-                        var y2 = readBottom - Math.min(1, history[j].read / scale) * readHeight
-                        if (j === 0) ctx.moveTo(x2, y2)
-                        else ctx.lineTo(x2, y2)
+                        var x2 = j / (history.length - 1) * plotWidth;
+                        var y2 = readBottom - Math.min(1, history[j].read / scale) * readHeight;
+                        if (j === 0)
+                            ctx.moveTo(x2, y2);
+                        else
+                            ctx.lineTo(x2, y2);
                     }
-                    ctx.stroke()
+                    ctx.stroke();
 
-                    ctx.fillStyle = Qt.rgba(1, 0.27, 0.27, 0.2)
-                    ctx.beginPath()
-                    ctx.moveTo(0, height)
+                    ctx.fillStyle = Qt.rgba(1, 0.27, 0.27, 0.2);
+                    ctx.beginPath();
+                    ctx.moveTo(0, height);
                     for (var k = 0; k < history.length; k++) {
-                        var x3 = k / (history.length - 1) * plotWidth
-                        var y3 = height - Math.min(1, history[k].write / scale) * writeHeight
-                        ctx.lineTo(x3, y3)
+                        var x3 = k / (history.length - 1) * plotWidth;
+                        var y3 = height - Math.min(1, history[k].write / scale) * writeHeight;
+                        ctx.lineTo(x3, y3);
                     }
-                    ctx.lineTo(plotWidth, height)
-                    ctx.closePath()
-                    ctx.fill()
+                    ctx.lineTo(plotWidth, height);
+                    ctx.closePath();
+                    ctx.fill();
 
-                    ctx.strokeStyle = "#ff4444"
-                    ctx.lineWidth = 1.5
-                    ctx.beginPath()
+                    ctx.strokeStyle = "#ff4444";
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
                     for (var l = 0; l < history.length; l++) {
-                        var x4 = l / (history.length - 1) * plotWidth
-                        var y4 = height - Math.min(1, history[l].write / scale) * writeHeight
-                        if (l === 0) ctx.moveTo(x4, y4)
-                        else ctx.lineTo(x4, y4)
+                        var x4 = l / (history.length - 1) * plotWidth;
+                        var y4 = height - Math.min(1, history[l].write / scale) * writeHeight;
+                        if (l === 0)
+                            ctx.moveTo(x4, y4);
+                        else
+                            ctx.lineTo(x4, y4);
                     }
-                    ctx.stroke()
+                    ctx.stroke();
 
-                    ctx.strokeStyle = root.themeBorderColor
-                    ctx.lineWidth = 1
-                    ctx.strokeRect(0.5, 0.5, plotWidth - 1, height - 1)
-                    ctx.beginPath()
-                    ctx.moveTo(0, halfHeight)
-                    ctx.lineTo(plotWidth, halfHeight)
-                    ctx.stroke()
+                    ctx.strokeStyle = root.themeBorderColor;
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(0.5, 0.5, plotWidth - 1, height - 1);
+                    ctx.beginPath();
+                    ctx.moveTo(0, halfHeight);
+                    ctx.lineTo(plotWidth, halfHeight);
+                    ctx.stroke();
                 }
             }
 
@@ -239,10 +247,26 @@ ColumnLayout {
                 anchors.top: storageXAxisLabels.bottom
                 spacing: Kirigami.Units.smallSpacing
 
-                Rectangle { width: 12; height: 3; color: "#00aaff"; radius: 1 }
-                PlasmaComponents.Label { text: "Read " + root.storageReadSpeed; font.pixelSize: 10 }
-                Rectangle { width: 12; height: 3; color: "#ff4444"; radius: 1 }
-                PlasmaComponents.Label { text: "Write " + root.storageWriteSpeed; font.pixelSize: 10 }
+                Rectangle {
+                    width: 12
+                    height: 3
+                    color: "#00aaff"
+                    radius: 1
+                }
+                PlasmaComponents.Label {
+                    text: "Read " + root.storageReadSpeed
+                    font.pixelSize: 10
+                }
+                Rectangle {
+                    width: 12
+                    height: 3
+                    color: "#ff4444"
+                    radius: 1
+                }
+                PlasmaComponents.Label {
+                    text: "Write " + root.storageWriteSpeed
+                    font.pixelSize: 10
+                }
             }
         }
     }
@@ -316,7 +340,9 @@ ColumnLayout {
                 }
             }
 
-            Item { height: 2 }
+            Item {
+                height: 2
+            }
         }
     }
 
@@ -329,5 +355,7 @@ ColumnLayout {
         font.pixelSize: 11
     }
 
-    Item { height: Kirigami.Units.smallSpacing }
+    Item {
+        height: Kirigami.Units.smallSpacing
+    }
 }

@@ -7,7 +7,9 @@ ColumnLayout {
     spacing: Kirigami.Units.smallSpacing
     Layout.fillWidth: true
 
-    Item { height: Kirigami.Units.smallSpacing }
+    Item {
+        height: Kirigami.Units.smallSpacing
+    }
 
     Repeater {
         model: root.temperatures
@@ -19,7 +21,8 @@ ColumnLayout {
 
             SvgIcon {
                 name: "am-temperature-symbolic"
-                width: 12; height: 12
+                width: 12
+                height: 12
             }
 
             PlasmaComponents.Label {
@@ -47,7 +50,11 @@ ColumnLayout {
                         width: (parent.width - 2) * Math.min(1, modelData.value / 110)
                         color: modelData.value > 90 ? "#ff4444" : modelData.value > 75 ? "#ffaa00" : "#00aaff"
                         radius: 2
-                        Behavior on width { NumberAnimation { duration: 300 } }
+                        Behavior on width {
+                            NumberAnimation {
+                                duration: 300
+                            }
+                        }
                     }
                 }
             }
@@ -57,9 +64,11 @@ ColumnLayout {
                 font.pixelSize: 11
                 font.bold: true
                 color: {
-                    if (modelData.value > 90) return "#ff4444"
-                    if (modelData.value > 75) return "#ffaa00"
-                    return Kirigami.Theme.textColor
+                    if (modelData.value > 90)
+                        return "#ff4444";
+                    if (modelData.value > 75)
+                        return "#ffaa00";
+                    return Kirigami.Theme.textColor;
                 }
                 horizontalAlignment: Text.AlignRight
                 Layout.preferredWidth: 55
@@ -76,5 +85,7 @@ ColumnLayout {
         font.pixelSize: 10
     }
 
-    Item { height: Kirigami.Units.smallSpacing }
+    Item {
+        height: Kirigami.Units.smallSpacing
+    }
 }

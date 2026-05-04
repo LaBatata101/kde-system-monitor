@@ -22,87 +22,92 @@ Item {
     readonly property int arrowSz: Math.max(8, Kirigami.Units.iconSizes.small - 4)
     readonly property var coreColors: ["#00aaff", "#22cc66", "#ffaa00", "#aa66ff", "#ff6688", "#00ccbb"]
     readonly property var defaultSectionOrder: ["temps", "network", "storage", "cpu", "gpu", "ram"]
-    readonly property var visibleSectionKeys: enabledSectionKeys(
-        plasmoid.configuration.sectionOrder,
-        plasmoid.configuration.showTemps,
-        plasmoid.configuration.showNetwork,
-        plasmoid.configuration.showStorage,
-        plasmoid.configuration.showCpu,
-        plasmoid.configuration.showGpu,
-        plasmoid.configuration.showRam
-    )
+    readonly property var visibleSectionKeys: enabledSectionKeys(plasmoid.configuration.sectionOrder, plasmoid.configuration.showTemps, plasmoid.configuration.showNetwork, plasmoid.configuration.showStorage, plasmoid.configuration.showCpu, plasmoid.configuration.showGpu, plasmoid.configuration.showRam)
 
     function hideExpandedFeedback() {
-        var item = compactRoot.parent
+        var item = compactRoot.parent;
         while (item) {
             if (item.expandedFeedback) {
-                item.expandedFeedback.opacity = 0
-                item.expandedFeedback.visible = false
-                return
+                item.expandedFeedback.opacity = 0;
+                item.expandedFeedback.visible = false;
+                return;
             }
-            item = item.parent
+            item = item.parent;
         }
     }
 
     function normalizedSectionOrder(order) {
-        var result = []
-        var seen = {}
-        var parts = String(order || "").split(",")
+        var result = [];
+        var seen = {};
+        var parts = String(order || "").split(",");
         for (var i = 0; i < parts.length; i++) {
-            var key = parts[i].trim()
+            var key = parts[i].trim();
             if (defaultSectionOrder.indexOf(key) !== -1 && !seen[key]) {
-                result.push(key)
-                seen[key] = true
+                result.push(key);
+                seen[key] = true;
             }
         }
         for (var j = 0; j < defaultSectionOrder.length; j++) {
-            var defaultKey = defaultSectionOrder[j]
-            if (!seen[defaultKey]) result.push(defaultKey)
+            var defaultKey = defaultSectionOrder[j];
+            if (!seen[defaultKey])
+                result.push(defaultKey);
         }
-        return result
+        return result;
     }
 
     function sectionEnabled(key, showTemps, showNetwork, showStorage, showCpu, showGpu, showRam) {
         switch (key) {
-        case "temps": return showTemps
-        case "network": return showNetwork
-        case "storage": return showStorage
-        case "cpu": return showCpu
-        case "gpu": return showGpu
-        case "ram": return showRam
+        case "temps":
+            return showTemps;
+        case "network":
+            return showNetwork;
+        case "storage":
+            return showStorage;
+        case "cpu":
+            return showCpu;
+        case "gpu":
+            return showGpu;
+        case "ram":
+            return showRam;
         }
-        return false
+        return false;
     }
 
     function enabledSectionKeys(order, showTemps, showNetwork, showStorage, showCpu, showGpu, showRam) {
-        var keys = normalizedSectionOrder(order)
-        var result = []
+        var keys = normalizedSectionOrder(order);
+        var result = [];
         for (var i = 0; i < keys.length; i++) {
             if (sectionEnabled(keys[i], showTemps, showNetwork, showStorage, showCpu, showGpu, showRam)) {
-                result.push(keys[i])
+                result.push(keys[i]);
             }
         }
-        return result
+        return result;
     }
 
     function sectionComponent(key) {
         switch (key) {
-        case "temps": return tempsSection
-        case "network": return networkSection
-        case "storage": return storageSection
-        case "cpu": return cpuSection
-        case "gpu": return gpuSection
-        case "ram": return ramSection
+        case "temps":
+            return tempsSection;
+        case "network":
+            return networkSection;
+        case "storage":
+            return storageSection;
+        case "cpu":
+            return cpuSection;
+        case "gpu":
+            return gpuSection;
+        case "ram":
+            return ramSection;
         }
-        return null
+        return null;
     }
 
     function sectionTitle(key) {
-        return root.compactToolTipTitle(key)
+        return root.compactToolTipTitle(key);
     }
 
     function sectionSummary(key) {
-        return root.compactToolTipSummary(key)
+        return root.compactToolTipSummary(key);
     }
 
     Component.onCompleted: Qt.callLater(hideExpandedFeedback)
@@ -169,10 +174,12 @@ Item {
                             text: root.temperatures[index].value.toFixed(1) + " °C"
                             font.pixelSize: compactRoot.twoLineLabelPx
                             color: {
-                                var t = root.temperatures[index].value
-                                if (t > 90) return "#ff4444"
-                                if (t > 75) return "#ffaa00"
-                                return Kirigami.Theme.textColor
+                                var t = root.temperatures[index].value;
+                                if (t > 90)
+                                    return "#ff4444";
+                                if (t > 75)
+                                    return "#ffaa00";
+                                return Kirigami.Theme.textColor;
                             }
                             font.bold: true
                         }
@@ -242,82 +249,84 @@ Item {
 
                     Connections {
                         target: root
-                        function onNetHistoryChanged() { netMiniGraph.requestPaint() }
+                        function onNetHistoryChanged() {
+                            netMiniGraph.requestPaint();
+                        }
                     }
 
                     onPaint: {
-                        var ctx = getContext("2d")
-                        ctx.clearRect(0, 0, width, height)
-                        var halfHeight = height / 2
-                        var dividerGap = 2
-                        var topPadding = 2
-                        var uploadBottom = halfHeight - dividerGap
-                        var uploadHeight = uploadBottom - topPadding
-                        var downloadTop = halfHeight + dividerGap
-                        var downloadHeight = height - downloadTop
-                        var borderColor = root.themeBorderColor
+                        var ctx = getContext("2d");
+                        ctx.clearRect(0, 0, width, height);
+                        var halfHeight = height / 2;
+                        var dividerGap = 2;
+                        var topPadding = 2;
+                        var uploadBottom = halfHeight - dividerGap;
+                        var uploadHeight = uploadBottom - topPadding;
+                        var downloadTop = halfHeight + dividerGap;
+                        var downloadHeight = height - downloadTop;
+                        var borderColor = root.themeBorderColor;
 
-                        ctx.strokeStyle = borderColor
-                        ctx.lineWidth = 1
-                        ctx.strokeRect(0.5, 0.5, width - 1, height - 1)
-                        ctx.beginPath()
-                        ctx.moveTo(0, halfHeight)
-                        ctx.lineTo(width, halfHeight)
-                        ctx.stroke()
+                        ctx.strokeStyle = borderColor;
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
+                        ctx.beginPath();
+                        ctx.moveTo(0, halfHeight);
+                        ctx.lineTo(width, halfHeight);
+                        ctx.stroke();
 
-                        var h = root.netHistory
-                        if (h.length < 2) return
-
-                        ctx.fillStyle = Qt.rgba(1, 0.27, 0.27, 0.2)
-                        ctx.beginPath()
-                        ctx.moveTo(0, uploadBottom)
+                        var h = root.netHistory;
+                        if (h.length < 2)
+                            return;
+                        ctx.fillStyle = Qt.rgba(1, 0.27, 0.27, 0.2);
+                        ctx.beginPath();
+                        ctx.moveTo(0, uploadBottom);
                         for (var i = 0; i < h.length; i++) {
-                            var x = i / (h.length - 1) * width
-                            var y = uploadBottom - h[i].tx * uploadHeight
-                            ctx.lineTo(x, y)
+                            var x = i / (h.length - 1) * width;
+                            var y = uploadBottom - h[i].tx * uploadHeight;
+                            ctx.lineTo(x, y);
                         }
-                        ctx.lineTo(width, uploadBottom)
-                        ctx.closePath()
-                        ctx.fill()
+                        ctx.lineTo(width, uploadBottom);
+                        ctx.closePath();
+                        ctx.fill();
 
-                        ctx.strokeStyle = "#ff4444"
-                        ctx.lineWidth = 1
-                        ctx.beginPath()
+                        ctx.strokeStyle = "#ff4444";
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
                         for (var j = 0; j < h.length; j++) {
-                            var x2 = j / (h.length - 1) * width
-                            var y2 = uploadBottom - h[j].tx * uploadHeight
-                            j === 0 ? ctx.moveTo(x2, y2) : ctx.lineTo(x2, y2)
+                            var x2 = j / (h.length - 1) * width;
+                            var y2 = uploadBottom - h[j].tx * uploadHeight;
+                            j === 0 ? ctx.moveTo(x2, y2) : ctx.lineTo(x2, y2);
                         }
-                        ctx.stroke()
+                        ctx.stroke();
 
-                        ctx.fillStyle = Qt.rgba(0, 0.6, 1, 0.2)
-                        ctx.beginPath()
-                        ctx.moveTo(0, height)
+                        ctx.fillStyle = Qt.rgba(0, 0.6, 1, 0.2);
+                        ctx.beginPath();
+                        ctx.moveTo(0, height);
                         for (var k = 0; k < h.length; k++) {
-                            var x3 = k / (h.length - 1) * width
-                            var y3 = height - h[k].rx * downloadHeight
-                            ctx.lineTo(x3, y3)
+                            var x3 = k / (h.length - 1) * width;
+                            var y3 = height - h[k].rx * downloadHeight;
+                            ctx.lineTo(x3, y3);
                         }
-                        ctx.lineTo(width, height)
-                        ctx.closePath()
-                        ctx.fill()
+                        ctx.lineTo(width, height);
+                        ctx.closePath();
+                        ctx.fill();
 
-                        ctx.strokeStyle = "#00aaff"
-                        ctx.beginPath()
+                        ctx.strokeStyle = "#00aaff";
+                        ctx.beginPath();
                         for (var l = 0; l < h.length; l++) {
-                            var x4 = l / (h.length - 1) * width
-                            var y4 = height - h[l].rx * downloadHeight
-                            l === 0 ? ctx.moveTo(x4, y4) : ctx.lineTo(x4, y4)
+                            var x4 = l / (h.length - 1) * width;
+                            var y4 = height - h[l].rx * downloadHeight;
+                            l === 0 ? ctx.moveTo(x4, y4) : ctx.lineTo(x4, y4);
                         }
-                        ctx.stroke()
+                        ctx.stroke();
 
-                        ctx.strokeStyle = borderColor
-                        ctx.lineWidth = 1
-                        ctx.strokeRect(0.5, 0.5, width - 1, height - 1)
-                        ctx.beginPath()
-                        ctx.moveTo(0, halfHeight)
-                        ctx.lineTo(width, halfHeight)
-                        ctx.stroke()
+                        ctx.strokeStyle = borderColor;
+                        ctx.lineWidth = 1;
+                        ctx.strokeRect(0.5, 0.5, width - 1, height - 1);
+                        ctx.beginPath();
+                        ctx.moveTo(0, halfHeight);
+                        ctx.lineTo(width, halfHeight);
+                        ctx.stroke();
                     }
                 }
 
@@ -413,14 +422,20 @@ Item {
                         radius: 2
 
                         Rectangle {
-                            anchors { bottom: parent.bottom; left: parent.left; right: parent.right; margins: 1 }
-                            height: root.storageDevices.length > 0 && root.storageDevices[0].percent > 0
-                                ? Math.max(3, (parent.height - 2) * (root.storageDevices[0].percent / 100))
-                                : 0
-                            color: root.storageDevices.length > 0 && root.storageDevices[0].percent > 85
-                                ? "#ff4444" : "#00aaff"
+                            anchors {
+                                bottom: parent.bottom
+                                left: parent.left
+                                right: parent.right
+                                margins: 1
+                            }
+                            height: root.storageDevices.length > 0 && root.storageDevices[0].percent > 0 ? Math.max(3, (parent.height - 2) * (root.storageDevices[0].percent / 100)) : 0
+                            color: root.storageDevices.length > 0 && root.storageDevices[0].percent > 85 ? "#ff4444" : "#00aaff"
                             radius: 1
-                            Behavior on height { NumberAnimation { duration: 300 } }
+                            Behavior on height {
+                                NumberAnimation {
+                                    duration: 300
+                                }
+                            }
                         }
                     }
                 }
@@ -482,16 +497,28 @@ Item {
 
                     Rectangle {
                         visible: root.cpuCores.length === 0
-                        anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 1 }
+                        anchors {
+                            left: parent.left
+                            right: parent.right
+                            bottom: parent.bottom
+                            margins: 1
+                        }
                         height: root.cpuTotal > 0 ? Math.max(1, (parent.height - 2) * (root.cpuTotal / 100)) : 0
                         color: root.cpuTotal > 80 ? "#ff4444" : "#00aaff"
                         radius: 1
-                        Behavior on height { NumberAnimation { duration: 300 } }
+                        Behavior on height {
+                            NumberAnimation {
+                                duration: 300
+                            }
+                        }
                     }
 
                     RowLayout {
                         visible: root.cpuCores.length > 0
-                        anchors { fill: parent; margins: 1 }
+                        anchors {
+                            fill: parent
+                            margins: 1
+                        }
                         spacing: 0
 
                         Repeater {
@@ -505,7 +532,11 @@ Item {
                                     width: parent.width
                                     height: modelData.usage > 0 ? Math.max(1, parent.height * (modelData.usage / 100)) : 0
                                     color: compactRoot.coreColors[index % compactRoot.coreColors.length]
-                                    Behavior on height { NumberAnimation { duration: 300 } }
+                                    Behavior on height {
+                                        NumberAnimation {
+                                            duration: 300
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -522,8 +553,20 @@ Item {
                     font.bold: true
                     color: Kirigami.Theme.textColor
 
-                    Text { id: cpuPctRef; visible: false; text: "100%"; font.pixelSize: compactRoot.labelPx; font.bold: true }
-                    Text { id: cpuPctDecRef; visible: false; text: "0.0%"; font.pixelSize: compactRoot.labelPx; font.bold: true }
+                    Text {
+                        id: cpuPctRef
+                        visible: false
+                        text: "100%"
+                        font.pixelSize: compactRoot.labelPx
+                        font.bold: true
+                    }
+                    Text {
+                        id: cpuPctDecRef
+                        visible: false
+                        text: "0.0%"
+                        font.pixelSize: compactRoot.labelPx
+                        font.bold: true
+                    }
                 }
             }
 
@@ -581,11 +624,20 @@ Item {
                         radius: 2
 
                         Rectangle {
-                            anchors { bottom: parent.bottom; left: parent.left; right: parent.right; margins: 1 }
+                            anchors {
+                                bottom: parent.bottom
+                                left: parent.left
+                                right: parent.right
+                                margins: 1
+                            }
                             height: Math.max(0, (parent.height - 2) * (root.gpuUsage / 100))
                             color: root.gpuUsage > 85 ? "#ff4444" : "#00aaff"
                             radius: 1
-                            Behavior on height { NumberAnimation { duration: 300 } }
+                            Behavior on height {
+                                NumberAnimation {
+                                    duration: 300
+                                }
+                            }
                         }
                     }
                 }
@@ -600,7 +652,13 @@ Item {
                     font.bold: true
                     color: Kirigami.Theme.textColor
 
-                    Text { id: gpuPctRef; visible: false; text: "100%"; font.pixelSize: compactRoot.labelPx; font.bold: true }
+                    Text {
+                        id: gpuPctRef
+                        visible: false
+                        text: "100%"
+                        font.pixelSize: compactRoot.labelPx
+                        font.bold: true
+                    }
                 }
             }
 
@@ -659,11 +717,20 @@ Item {
                         radius: 2
 
                         Rectangle {
-                            anchors { bottom: parent.bottom; left: parent.left; right: parent.right; margins: 1 }
+                            anchors {
+                                bottom: parent.bottom
+                                left: parent.left
+                                right: parent.right
+                                margins: 1
+                            }
                             height: Math.max(0, (parent.height - 2) * (root.ramTotal > 0 ? root.ramUsed / root.ramTotal : 0))
                             color: (root.ramTotal > 0 && root.ramUsed / root.ramTotal > 0.85) ? "#ff4444" : "#00aaff"
                             radius: 1
-                            Behavior on height { NumberAnimation { duration: 300 } }
+                            Behavior on height {
+                                NumberAnimation {
+                                    duration: 300
+                                }
+                            }
                         }
                     }
                 }
@@ -678,7 +745,13 @@ Item {
                     font.bold: true
                     color: Kirigami.Theme.textColor
 
-                    Text { id: ramPctRef; visible: false; text: "100%"; font.pixelSize: compactRoot.labelPx; font.bold: true }
+                    Text {
+                        id: ramPctRef
+                        visible: false
+                        text: "100%"
+                        font.pixelSize: compactRoot.labelPx
+                        font.bold: true
+                    }
                 }
             }
 
