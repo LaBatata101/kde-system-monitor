@@ -72,6 +72,11 @@ PlasmoidItem {
     }
 
     function openSection(sectionIndex) {
+        if (expanded && selectedSection === sectionIndex) {
+            expanded = false
+            return
+        }
+
         selectedSection = sectionIndex
         expanded = true
     }
