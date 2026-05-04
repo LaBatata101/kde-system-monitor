@@ -22,9 +22,9 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.leftMargin: Kirigami.Units.smallSpacing
         Layout.rightMargin: Kirigami.Units.smallSpacing
-        height: Math.max(70, Math.ceil(root.cpuCores.length / 8) * 70)
+        height: Math.max(82, Math.ceil(root.cpuCores.length / 8) * 82)
         cellWidth: width / Math.min(8, root.cpuCores.length > 0 ? root.cpuCores.length : 8)
-        cellHeight: 70
+        cellHeight: 82
         model: root.cpuCores
         interactive: false
 
@@ -41,6 +41,7 @@ ColumnLayout {
                     Layout.fillWidth: true
                     text: modelData.name.replace("cpu", "Core")
                     font.pixelSize: 8
+                    font.bold: true
                     horizontalAlignment: Text.AlignHCenter
                     elide: Text.ElideRight
                 }
@@ -80,6 +81,15 @@ ColumnLayout {
                     text: modelData.usage.toFixed(1) + "%"
                     font.pixelSize: 8
                     horizontalAlignment: Text.AlignHCenter
+                }
+
+                PlasmaComponents.Label {
+                    Layout.fillWidth: true
+                    text: root.cpuCoreClockText(modelData.name)
+                    visible: text.length > 0
+                    font.pixelSize: 8
+                    horizontalAlignment: Text.AlignHCenter
+                    elide: Text.ElideRight
                 }
             }
         }

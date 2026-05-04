@@ -16,6 +16,8 @@ PlasmoidItem {
     property real cpuUser: 0
     property real cpuSystem: 0
     property string cpuModel: ""
+    property real cpuClockMHz: 0
+    property var cpuCoreClocks: ({})
     property var cpuCores: []
     property var cpuHistory: []
     property var topProcesses: []
@@ -98,6 +100,7 @@ PlasmoidItem {
             return "Usage " + formatPercent(cpuTotal)
                 + " (user " + formatPercent(cpuUser)
                 + ", system " + formatPercent(cpuSystem) + ")"
+                + " @ " + cpuClockText()
         case "ram":
             return ramTotal > 0
                 ? "Used " + formatMemoryMib(ramUsed) + " / " + formatMemoryMib(ramTotal)
@@ -160,6 +163,20 @@ PlasmoidItem {
         return percent < 1 ? percent.toFixed(1) + "%" : percent.toFixed(0) + "%"
     }
 
+    function formatCpuClock(mhz) {
+        if (mhz <= 0) return ""
+        if (mhz < 1000) return mhz.toFixed(0) + " MHz"
+        return (mhz / 1000).toFixed(2) + " GHz"
+    }
+
+    function cpuClockText() {
+        return formatCpuClock(cpuClockMHz) || "unavailable"
+    }
+
+    function cpuCoreClockText(coreName) {
+        return formatCpuClock(cpuCoreClocks[coreName] || 0)
+    }
+
     function formatStorageBytes(bytes) {
         if (bytes < 1024) return bytes.toFixed(0) + " B"
         if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB"
@@ -200,7 +217,7 @@ PlasmoidItem {
             else if (src.indexOf("sensors") !== -1)        parseSensors(out)
             else if (src.indexOf("uptime") !== -1)         systemUptime = out.trim().replace(/^up\s+/, "")
             else if (src.indexOf("lspci") !== -1)          parseGpu(out)
-            else if (src.indexOf("/proc/cpuinfo") !== -1)  parseCpuModel(out)
+            else if (src.indexOf("/proc/cpuinfo") !== -1)  parseCpuInfo(out)
             else if (src.indexOf("pcpu=") !== -1)          parseProcs(out)
             else if (src.indexOf("rss=") !== -1)           parseRamProcs(out)
         }
@@ -213,6 +230,7 @@ PlasmoidItem {
         repeat: true
         onTriggered: {
             exe.connectSource("cat /proc/stat")
+            exe.connectSource("cat /proc/cpuinfo")
             exe.connectSource("cat /proc/net/dev")
             exe.connectSource("cat /proc/diskstats")
             exe.connectSource(_topProcessesCommand)
@@ -236,7 +254,6 @@ PlasmoidItem {
     Timer {
         interval: 30000; running: true; repeat: false
         onTriggered: {
-            exe.connectSource("cat /proc/cpuinfo 2>/dev/null | grep 'model name' | head -1 | cut -d: -f2")
             exe.connectSource("lspci 2>/dev/null | grep -iE 'VGA|3D|Display' | sed 's/.*: //'")
         }
     }
@@ -248,7 +265,7 @@ PlasmoidItem {
         exe.connectSource("cat /proc/meminfo")
         exe.connectSource(_ramTopProcessesCommand)
         exe.connectSource("lsblk -J -b -o NAME,SIZE,TYPE,MODEL,TRAN,RM 2>/dev/null")
-        exe.connectSource("cat /proc/cpuinfo 2>/dev/null | grep 'model name' | head -1 | cut -d: -f2")
+        exe.connectSource("cat /proc/cpuinfo")
         exe.connectSource("lspci 2>/dev/null | grep -iE 'VGA|3D|Display' | sed 's/.*: //'")
     }
 
@@ -499,8 +516,43 @@ PlasmoidItem {
         gpus = list
     }
 
-    function parseCpuModel(raw) {
-        cpuModel = raw.trim()
+    function parseCpuInfo(raw) {
+        var model = ""
+        var currentCore = ""
+        var clocks = {}
+        var clockTotal = 0
+        var clockCount = 0
+
+        raw.split("\n").forEach(function(line) {
+            var processorMatch = line.match(/^processor\s*:\s*(\d+)/)
+            if (processorMatch) {
+                currentCore = "cpu" + processorMatch[1]
+                return
+            }
+
+            var modelMatch = line.match(/^model name\s*:\s*(.+)$/)
+            if (modelMatch && !model) {
+                model = modelMatch[1].trim()
+                return
+            }
+
+            var clockMatch = line.match(/^cpu MHz\s*:\s*([\d.]+)/)
+            if (clockMatch) {
+                var clock = parseFloat(clockMatch[1]) || 0
+                if (clock > 0) {
+                    var coreName = currentCore || ("cpu" + clockCount)
+                    clocks[coreName] = clock
+                    clockTotal += clock
+                    clockCount++
+                }
+            }
+        })
+
+        if (model) cpuModel = model
+        if (clockCount > 0) {
+            cpuClockMHz = clockTotal / clockCount
+            cpuCoreClocks = clocks
+        }
     }
 
     function parseProcs(raw) {

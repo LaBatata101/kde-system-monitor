@@ -42,7 +42,7 @@ ColumnLayout {
     // CPU Model
     PlasmaComponents.Label {
         Layout.fillWidth: true
-        text: root.cpuModel || "CPU"
+        text: (root.cpuModel || "CPU") + (root.cpuClockMHz > 0 ? " @ " + root.cpuClockText() : "")
         elide: Text.ElideRight
         horizontalAlignment: Text.AlignHCenter
         font.pixelSize: 11
