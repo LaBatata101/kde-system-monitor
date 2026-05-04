@@ -36,7 +36,6 @@ Item {
             visible: fullRoot.activeSection === 0
             title: "CPU"
             icon: ""
-            showUsageRow: false
         }
 
         CpuDetail {
@@ -54,7 +53,6 @@ Item {
             value: fullRoot.parentRef.gpuUsageText()
             barValue: fullRoot.parentRef.gpuUsage / 100
             barColor: fullRoot.parentRef.gpuUsage > 85 ? "#ff4444" : "#00aaff"
-            showUsageRow: false
         }
 
         GpuDetail {
@@ -72,7 +70,6 @@ Item {
             value: fullRoot.parentRef.ramTotal > 0 ? (fullRoot.parentRef.ramUsed / 1024).toFixed(1) + " / " + (fullRoot.parentRef.ramTotal / 1024).toFixed(1) + " GB" : "..."
             barValue: fullRoot.parentRef.ramTotal > 0 ? fullRoot.parentRef.ramUsed / fullRoot.parentRef.ramTotal : 0
             barColor: fullRoot.parentRef.ramTotal > 0 && (fullRoot.parentRef.ramUsed / fullRoot.parentRef.ramTotal) > 0.85 ? "#ff4444" : "#00aaff"
-            showUsageRow: false
         }
 
         RamDetail {
@@ -89,7 +86,6 @@ Item {
             icon: "am-network-symbolic"
             value: "↑ " + fullRoot.parentRef.netUploadSpeed + "  ↓ " + fullRoot.parentRef.netDownloadSpeed
             showBar: false
-            showUsageRow: false
         }
 
         NetworkDetail {
@@ -107,7 +103,6 @@ Item {
             value: fullRoot.parentRef.storageDevices.length > 0 ? fullRoot.parentRef.storageDevices[0].used + " / " + fullRoot.parentRef.storageDevices[0].size : "..."
             barValue: fullRoot.parentRef.storageDevices.length > 0 ? fullRoot.parentRef.storageDevices[0].percent / 100 : 0
             barColor: fullRoot.parentRef.storageDevices.length > 0 && fullRoot.parentRef.storageDevices[0].percent > 85 ? "#ff4444" : "#00aaff"
-            showUsageRow: false
         }
 
         StorageDetail {
@@ -125,7 +120,6 @@ Item {
             value: fullRoot.parentRef.temperatures.length > 0 ? fullRoot.parentRef.temperatures[0].value.toFixed(1) + " °C" : "N/A"
             barValue: fullRoot.parentRef.temperatures.length > 0 ? fullRoot.parentRef.temperatures[0].value / 100 : 0
             barColor: fullRoot.parentRef.temperatures.length > 0 && fullRoot.parentRef.temperatures[0].value > 80 ? "#ff4444" : "#ffaa00"
-            showUsageRow: false
         }
 
         TempDetail {
