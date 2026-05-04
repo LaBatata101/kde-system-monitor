@@ -76,6 +76,40 @@ PlasmoidItem {
         expanded = true
     }
 
+    function compactToolTipTitle(sectionKey) {
+        switch (sectionKey) {
+        case "cpu": return "CPU"
+        case "ram": return "RAM"
+        case "network": return "Network"
+        case "storage": return "Storage"
+        case "temps": return "Temperatures"
+        }
+        return "System Monitor"
+    }
+
+    function compactToolTipSummary(sectionKey) {
+        switch (sectionKey) {
+        case "cpu":
+            return "Usage " + formatPercent(cpuTotal)
+                + " (user " + formatPercent(cpuUser)
+                + ", system " + formatPercent(cpuSystem) + ")"
+        case "ram":
+            return ramTotal > 0
+                ? "Used " + formatMemoryMib(ramUsed) + " / " + formatMemoryMib(ramTotal)
+                    + " (" + formatPercent(ramUsed / ramTotal * 100) + ")"
+                : "Memory usage unavailable"
+        case "network":
+            return "Up " + netUploadSpeed + ", down " + netDownloadSpeed
+        case "storage":
+            return storageDevices.length > 0
+                ? storageDevices[0].used + " / " + storageDevices[0].size + " (" + storageDevices[0].percent + "%)"
+                : "Storage usage unavailable"
+        case "temps":
+            return compactTemperaturesSummary()
+        }
+        return "CPU, RAM, Network, Storage and Temperatures"
+    }
+
     function openSystemResourceMonitor() {
         exe.connectSource("kstart plasma-systemmonitor")
     }
@@ -112,6 +146,15 @@ PlasmoidItem {
         return (kib / 1048576).toFixed(1) + " GB"
     }
 
+    function formatMemoryMib(mib) {
+        if (mib < 1024) return mib.toFixed(mib < 100 ? 1 : 0) + " MB"
+        return (mib / 1024).toFixed(1) + " GB"
+    }
+
+    function formatPercent(percent) {
+        return percent < 1 ? percent.toFixed(1) + "%" : percent.toFixed(0) + "%"
+    }
+
     function formatStorageBytes(bytes) {
         if (bytes < 1024) return bytes.toFixed(0) + " B"
         if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB"
@@ -119,6 +162,20 @@ PlasmoidItem {
         if (bytes < 1099511627776) return (bytes / 1073741824).toFixed(1) + " GB"
         return (bytes / 1099511627776).toFixed(1) + " TB"
     }
+
+    function compactTemperaturesSummary() {
+        if (temperatures.length === 0) return "Temperature data unavailable"
+
+        var hottest = temperatures[0]
+        for (var i = 1; i < temperatures.length; i++) {
+            if (temperatures[i].value > hottest.value) hottest = temperatures[i]
+        }
+
+        return hottest.label + ": " + hottest.value.toFixed(1) + " °C"
+    }
+
+    toolTipMainText: ""
+    toolTipSubText: ""
 
     //  Executable data source 
     P5Support.DataSource {

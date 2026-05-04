@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import org.kde.plasma.plasmoid
+import org.kde.plasma.core as PlasmaCore
 import org.kde.kirigami as Kirigami
 
 Item {
@@ -93,6 +94,14 @@ Item {
         return null
     }
 
+    function sectionTitle(key) {
+        return root.compactToolTipTitle(key)
+    }
+
+    function sectionSummary(key) {
+        return root.compactToolTipSummary(key)
+    }
+
     Component.onCompleted: Qt.callLater(hideExpandedFeedback)
 
     RowLayout {
@@ -120,7 +129,7 @@ Item {
             implicitWidth: tempContent.implicitWidth + compactRoot.hotspotHorizontalPadding * 2
             implicitHeight: Math.max(compactRoot.iconSz, tempContent.implicitHeight) + compactRoot.hotspotVerticalPadding * 2
             radius: 3
-            color: tempMouseArea.containsMouse ? root.themeHoverColor : "transparent"
+            color: tempToolTipArea.containsMouse ? root.themeHoverColor : "transparent"
 
             RowLayout {
                 id: tempContent
@@ -178,12 +187,19 @@ Item {
                 }
             }
 
-            MouseArea {
-                id: tempMouseArea
+            PlasmaCore.ToolTipArea {
+                id: tempToolTipArea
                 anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.openSection(4)
+                mainText: compactRoot.sectionTitle("temps")
+                subText: compactRoot.sectionSummary("temps")
+                location: Plasmoid.location
+                active: !root.expanded
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: root.openSection(4)
+                }
             }
         }
     }
@@ -195,7 +211,7 @@ Item {
             implicitWidth: networkContent.implicitWidth + compactRoot.hotspotHorizontalPadding * 2
             implicitHeight: Math.max(compactRoot.iconSz + 10, networkContent.implicitHeight) + compactRoot.hotspotVerticalPadding * 2
             radius: 3
-            color: networkMouseArea.containsMouse ? root.themeHoverColor : "transparent"
+            color: networkToolTipArea.containsMouse ? root.themeHoverColor : "transparent"
 
             RowLayout {
                 id: networkContent
@@ -340,12 +356,19 @@ Item {
                 }
             }
 
-            MouseArea {
-                id: networkMouseArea
+            PlasmaCore.ToolTipArea {
+                id: networkToolTipArea
                 anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.openSection(2)
+                mainText: compactRoot.sectionTitle("network")
+                subText: compactRoot.sectionSummary("network")
+                location: Plasmoid.location
+                active: !root.expanded
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: root.openSection(2)
+                }
             }
         }
     }
@@ -357,7 +380,7 @@ Item {
             implicitWidth: storageContent.implicitWidth + compactRoot.hotspotHorizontalPadding * 2
             implicitHeight: Math.max(compactRoot.iconSz, storageContent.implicitHeight) + compactRoot.hotspotVerticalPadding * 2
             radius: 3
-            color: storageMouseArea.containsMouse ? root.themeHoverColor : "transparent"
+            color: storageToolTipArea.containsMouse ? root.themeHoverColor : "transparent"
 
             RowLayout {
                 id: storageContent
@@ -400,12 +423,19 @@ Item {
                 }
             }
 
-            MouseArea {
-                id: storageMouseArea
+            PlasmaCore.ToolTipArea {
+                id: storageToolTipArea
                 anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.openSection(3)
+                mainText: compactRoot.sectionTitle("storage")
+                subText: compactRoot.sectionSummary("storage")
+                location: Plasmoid.location
+                active: !root.expanded
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: root.openSection(3)
+                }
             }
         }
     }
@@ -417,7 +447,7 @@ Item {
             implicitWidth: cpuContent.implicitWidth + compactRoot.hotspotHorizontalPadding * 2
             implicitHeight: Math.max(compactRoot.iconSz, cpuContent.implicitHeight) + compactRoot.hotspotVerticalPadding * 2
             radius: 3
-            color: cpuMouseArea.containsMouse ? root.themeHoverColor : "transparent"
+            color: cpuToolTipArea.containsMouse ? root.themeHoverColor : "transparent"
 
             RowLayout {
                 id: cpuContent
@@ -494,12 +524,19 @@ Item {
                 }
             }
 
-            MouseArea {
-                id: cpuMouseArea
+            PlasmaCore.ToolTipArea {
+                id: cpuToolTipArea
                 anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.openSection(0)
+                mainText: compactRoot.sectionTitle("cpu")
+                subText: compactRoot.sectionSummary("cpu")
+                location: Plasmoid.location
+                active: !root.expanded
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: root.openSection(0)
+                }
             }
         }
     }
@@ -511,7 +548,7 @@ Item {
             implicitWidth: ramContent.implicitWidth + compactRoot.hotspotHorizontalPadding * 2
             implicitHeight: Math.max(compactRoot.iconSz, ramContent.implicitHeight) + compactRoot.hotspotVerticalPadding * 2
             radius: 3
-            color: ramMouseArea.containsMouse ? root.themeHoverColor : "transparent"
+            color: ramToolTipArea.containsMouse ? root.themeHoverColor : "transparent"
 
             RowLayout {
                 id: ramContent
@@ -564,12 +601,19 @@ Item {
                 }
             }
 
-            MouseArea {
-                id: ramMouseArea
+            PlasmaCore.ToolTipArea {
+                id: ramToolTipArea
                 anchors.fill: parent
-                hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
-                onClicked: root.openSection(1)
+                mainText: compactRoot.sectionTitle("ram")
+                subText: compactRoot.sectionSummary("ram")
+                location: Plasmoid.location
+                active: !root.expanded
+
+                MouseArea {
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: root.openSection(1)
+                }
             }
         }
     }
