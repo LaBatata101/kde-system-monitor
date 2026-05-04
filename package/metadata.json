@@ -7,9 +7,9 @@
             }
         ],
         "Category": "System Information",
-        "Description": "System Monitor panel widget with CPU, GPU, RAM, Network, Storage and Temperature sections",
+        "Description": "Panel-friendly system monitor for Plasma 6 with live CPU, GPU, memory, network, storage and temperature metrics.",
         "Icon": "utilities-system-monitor",
-        "Id": "com.github.sysmonitor",
+        "Id": "com.labatata.sysmonitor",
         "License": "GPL-3.0",
         "Name": "System Monitor",
         "Version": "1.0.0",
