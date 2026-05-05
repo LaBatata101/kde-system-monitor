@@ -12,7 +12,7 @@ ColumnLayout {
     required property var parentRef
 
     readonly property int axisLabelGap: 2
-    readonly property int axisLabelWidth: axisLabelSizer.implicitWidth
+    readonly property int axisLabelWidth: Math.ceil(axisLabelSizer.implicitWidth) + 2
 
     function showCoreInfoPopup() {
         coreInfoCloseTimer.stop();
@@ -36,7 +36,7 @@ ColumnLayout {
     spacing: Kirigami.Units.smallSpacing
     Layout.fillWidth: true
 
-    Text {
+    PlasmaComponents.Label {
         id: axisLabelSizer
 
         visible: false
@@ -99,19 +99,77 @@ ColumnLayout {
             anchors.verticalCenter: cpuUsageRow.verticalCenter
             width: Math.max(0, cpuUsageRow.width - cpuUsageRow.rightInset)
             height: 6
-            radius: 3
+            radius: height / 2
             color: cpuDetailRoot.parentRef.themeTrackColor
 
-            Rectangle {
-                width: cpuUsageTrack.width * Math.min(1, Math.max(0, cpuDetailRoot.parentRef.cpuTotal / 100))
-                height: cpuUsageTrack.height
-                radius: 3
-                color: cpuDetailRoot.parentRef.cpuTotal > 80 ? "#ff4444" : "#00aaff"
+            readonly property real targetUsageRatio: {
+                let usage = cpuDetailRoot.parentRef.cpuTotal || 0;
+                return usage >= 99.5 ? 1 : Math.min(1, Math.max(0, usage / 100));
+            }
+            readonly property color fillColor: cpuDetailRoot.parentRef.cpuTotal > 80 ? "#ff4444" : "#00aaff"
+            property real fillWidth: 0
 
-                Behavior on width {
-                    NumberAnimation {
-                        duration: 300
-                    }
+            onTargetUsageRatioChanged: fillWidth = cpuUsageTrack.width * targetUsageRatio
+            onWidthChanged: fillWidth = cpuUsageTrack.width * targetUsageRatio
+
+            Component.onCompleted: {
+                fillWidth = cpuUsageTrack.width * targetUsageRatio;
+            }
+
+            Behavior on fillWidth {
+                NumberAnimation {
+                    duration: 300
+                    easing.type: Easing.InOutQuad
+                }
+            }
+
+            Item {
+                id: cpuUsageFill
+
+                anchors.left: cpuUsageTrack.left
+                anchors.verticalCenter: cpuUsageTrack.verticalCenter
+                width: Math.max(0, Math.min(cpuUsageTrack.width, cpuUsageTrack.fillWidth))
+                height: cpuUsageTrack.height
+                visible: width > 0
+
+                Rectangle {
+                    anchors.left: cpuUsageFill.left
+                    anchors.verticalCenter: cpuUsageFill.verticalCenter
+                    width: cpuUsageFill.width
+                    height: cpuUsageFill.height
+                    radius: Math.min(height / 2, width / 2)
+                    color: cpuUsageTrack.fillColor
+                    visible: cpuUsageFill.width < cpuUsageTrack.height
+                }
+
+                Rectangle {
+                    anchors.left: cpuUsageFill.left
+                    anchors.verticalCenter: cpuUsageFill.verticalCenter
+                    width: cpuUsageTrack.height
+                    height: cpuUsageTrack.height
+                    radius: height / 2
+                    color: cpuUsageTrack.fillColor
+                    visible: cpuUsageFill.width >= cpuUsageTrack.height
+                }
+
+                Rectangle {
+                    anchors.left: cpuUsageFill.left
+                    anchors.leftMargin: cpuUsageTrack.height / 2
+                    anchors.verticalCenter: cpuUsageFill.verticalCenter
+                    width: Math.max(0, cpuUsageFill.width - cpuUsageTrack.height)
+                    height: cpuUsageTrack.height
+                    color: cpuUsageTrack.fillColor
+                    visible: cpuUsageFill.width >= cpuUsageTrack.height
+                }
+
+                Rectangle {
+                    x: cpuUsageFill.width - cpuUsageTrack.height
+                    anchors.verticalCenter: cpuUsageFill.verticalCenter
+                    width: cpuUsageTrack.height
+                    height: cpuUsageTrack.height
+                    radius: height / 2
+                    color: cpuUsageTrack.fillColor
+                    visible: cpuUsageFill.width >= cpuUsageTrack.height
                 }
             }
         }

@@ -11,12 +11,12 @@ ColumnLayout {
     required property var parentRef
 
     readonly property int axisLabelGap: 2
-    readonly property int axisLabelWidth: axisLabelSizer.implicitWidth
+    readonly property int axisLabelWidth: Math.ceil(axisLabelSizer.implicitWidth) + 2
 
     spacing: Kirigami.Units.smallSpacing
     Layout.fillWidth: true
 
-    Text {
+    PlasmaComponents.Label {
         id: axisLabelSizer
 
         visible: false
@@ -96,19 +96,77 @@ ColumnLayout {
                     anchors.verticalCenter: gpuUsageRow.verticalCenter
                     width: Math.max(0, gpuUsageRow.width - gpuUsageRow.rightInset)
                     height: 6
-                    radius: 3
+                    radius: height / 2
                     color: gpuDetailRoot.parentRef.themeTrackColor
 
-                    Rectangle {
-                        width: gpuUsageTrack.width * Math.min(1, Math.max(0, (gpuDeviceDelegate.modelData.usage || 0) / 100))
-                        height: gpuUsageTrack.height
-                        radius: 3
-                        color: (gpuDeviceDelegate.modelData.usage || 0) > 85 ? "#ff4444" : "#00aaff"
+                    readonly property real targetUsageRatio: {
+                        let usage = gpuDeviceDelegate.modelData.usage || 0;
+                        return usage >= 99.5 ? 1 : Math.min(1, Math.max(0, usage / 100));
+                    }
+                    readonly property color fillColor: (gpuDeviceDelegate.modelData.usage || 0) > 85 ? "#ff4444" : "#00aaff"
+                    property real fillWidth: 0
 
-                        Behavior on width {
-                            NumberAnimation {
-                                duration: 300
-                            }
+                    onTargetUsageRatioChanged: fillWidth = gpuUsageTrack.width * targetUsageRatio
+                    onWidthChanged: fillWidth = gpuUsageTrack.width * targetUsageRatio
+
+                    Component.onCompleted: {
+                        fillWidth = gpuUsageTrack.width * targetUsageRatio;
+                    }
+
+                    Behavior on fillWidth {
+                        NumberAnimation {
+                            duration: 300
+                            easing.type: Easing.InOutQuad
+                        }
+                    }
+
+                    Item {
+                        id: gpuUsageFill
+
+                        anchors.left: gpuUsageTrack.left
+                        anchors.verticalCenter: gpuUsageTrack.verticalCenter
+                        width: Math.max(0, Math.min(gpuUsageTrack.width, gpuUsageTrack.fillWidth))
+                        height: gpuUsageTrack.height
+                        visible: width > 0
+
+                        Rectangle {
+                            anchors.left: gpuUsageFill.left
+                            anchors.verticalCenter: gpuUsageFill.verticalCenter
+                            width: gpuUsageFill.width
+                            height: gpuUsageFill.height
+                            radius: Math.min(height / 2, width / 2)
+                            color: gpuUsageTrack.fillColor
+                            visible: gpuUsageFill.width < gpuUsageTrack.height
+                        }
+
+                        Rectangle {
+                            anchors.left: gpuUsageFill.left
+                            anchors.verticalCenter: gpuUsageFill.verticalCenter
+                            width: gpuUsageTrack.height
+                            height: gpuUsageTrack.height
+                            radius: height / 2
+                            color: gpuUsageTrack.fillColor
+                            visible: gpuUsageFill.width >= gpuUsageTrack.height
+                        }
+
+                        Rectangle {
+                            anchors.left: gpuUsageFill.left
+                            anchors.leftMargin: gpuUsageTrack.height / 2
+                            anchors.verticalCenter: gpuUsageFill.verticalCenter
+                            width: Math.max(0, gpuUsageFill.width - gpuUsageTrack.height)
+                            height: gpuUsageTrack.height
+                            color: gpuUsageTrack.fillColor
+                            visible: gpuUsageFill.width >= gpuUsageTrack.height
+                        }
+
+                        Rectangle {
+                            x: gpuUsageFill.width - gpuUsageTrack.height
+                            anchors.verticalCenter: gpuUsageFill.verticalCenter
+                            width: gpuUsageTrack.height
+                            height: gpuUsageTrack.height
+                            radius: height / 2
+                            color: gpuUsageTrack.fillColor
+                            visible: gpuUsageFill.width >= gpuUsageTrack.height
                         }
                     }
                 }
