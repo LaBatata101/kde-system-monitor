@@ -32,9 +32,7 @@ with expanded details for deeper inspection.
 ## Requirements
 
 - KDE Plasma 6.
-- Optional: `lm-sensors` for temperature readings.
-- Optional: NVIDIA driver tools or supported kernel/sysfs interfaces for GPU
-  details, depending on the GPU vendor and driver.
+- `lm-sensors` for temperature readings.
 
 ## Install
 
