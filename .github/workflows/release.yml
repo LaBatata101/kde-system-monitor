@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "**"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Package and release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build plasmoid package
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          rm -f ./*.plasmoid
+          bash package.sh
+
+          artifact="$(find . -maxdepth 1 -type f -name "*.plasmoid" -print -quit)"
+          if [[ -z "$artifact" ]]; then
+            echo "package.sh did not create a .plasmoid file" >&2
+            exit 1
+          fi
+
+          echo "artifact=${artifact#./}" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG_NAME" \
+            "${{ steps.package.outputs.artifact }}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$TAG_NAME" \
+            --generate-notes \
+            --verify-tag
