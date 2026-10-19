@@ -93,6 +93,36 @@ Item {
         return compactRoot.parentRef.compactToolTipSummary(key);
     }
 
+    // Entries shown in the GPU section: every detected device, or one synthetic summary row as a fallback.
+    readonly property var gpuRowModel: compactRoot.parentRef.gpuDevices.length > 0 ? compactRoot.parentRef.gpuDevices : [
+        {
+            "name": compactRoot.parentRef.gpuNameText(),
+            "usage": compactRoot.parentRef.gpuUsage
+        }
+    ]
+
+    // Shortens a GPU name for the panel, e.g. "NVIDIA GeForce RTX 4050 Laptop GPU" -> "RTX 4050".
+    // Vendor names, generic product words and trailing "(rev ..)" noise are dropped; falls back to the full name.
+    function compactGpuName(name) {
+        const full = String(name || "").trim();
+        if (full.length === 0)
+            return "GPU";
+
+        // lspci-style names keep the marketing name in [...]; prefer it over a bare vendor tag such as [AMD/ATI].
+        const vendorTag = /^\s*(AMD\/ATI|AMD|ATI|NVIDIA|Intel)\s*$/i;
+        const bracketRe = /\[([^\]]+)\]/g;
+        let label = full;
+        let match;
+        while ((match = bracketRe.exec(full)) !== null) {
+            if (!vendorTag.test(match[1])) {
+                label = match[1].split("/")[0];
+                break;
+            }
+        }
+        label = label.replace(/\((R|TM)\)/gi, "").replace(/\[[^\]]*\]/g, "").replace(/\([^)]*\)/g, "").replace(/Advanced Micro Devices,?( Inc\.?)?|NVIDIA( Corporation)?|Intel( Corporation)?|\bAMD\b|\bATI\b/gi, "").replace(/\bGeForce\b|\bGraphics\b|\bLaptop GPU\b|\bMobile\b|\bMax-Q\b|\bGPU\b/gi, "").replace(/\s*\/\s*/g, " ").replace(/\s+/g, " ").trim();
+        return label.length > 0 ? label : full;
+    }
+
     function hideExpandedFeedback() {
         let item = compactRoot.parent;
         while (item) {
@@ -553,33 +583,75 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
             }
 
-            VerticalUsageMeter {
-                implicitWidth: Math.round(compactRoot.iconSz * 0.7)
-                implicitHeight: compactRoot.iconSz
-                Layout.alignment: Qt.AlignVCenter
-                value: compactRoot.parentRef.gpuUsage / 100
-                warningThreshold: 1
-                criticalThreshold: 0.85
-                borderColor: compactRoot.parentRef.themeBorderColor
-            }
+            Column {
+                id: gpuRows
 
-            Text {
                 Layout.alignment: Qt.AlignVCenter
-                Layout.preferredWidth: gpuPctRef.implicitWidth
-                Layout.minimumWidth: gpuPctRef.implicitWidth
-                horizontalAlignment: Text.AlignLeft
-                text: compactRoot.parentRef.formatPercent(compactRoot.parentRef.gpuUsage)
-                font.pixelSize: compactRoot.labelPx
-                font.bold: true
-                color: Kirigami.Theme.textColor
+                spacing: 2
+
+                FontMetrics {
+                    id: gpuFontMetrics
+
+                    font.pixelSize: compactRoot.labelPx
+                }
+
+                // Widest shortened name, capped at twelve digit-widths so long names elide instead of widening the panel.
+                readonly property real nameColumnWidth: {
+                    const cap = gpuFontMetrics.advanceWidth("000000000000");
+                    let widest = 0;
+                    for (let i = 0; i < compactRoot.gpuRowModel.length; i++)
+                        widest = Math.max(widest, gpuFontMetrics.advanceWidth(compactRoot.compactGpuName(compactRoot.gpuRowModel[i].name)));
+                    return Math.ceil(Math.min(widest, cap));
+                }
 
                 Text {
-                    id: gpuPctRef
+                    id: gpuPercentRef
 
                     visible: false
                     text: "100%"
                     font.pixelSize: compactRoot.labelPx
                     font.bold: true
+                }
+
+                Repeater {
+                    model: compactRoot.gpuRowModel
+
+                    delegate: Row {
+                        id: gpuRow
+
+                        required property var modelData
+
+                        spacing: Kirigami.Units.smallSpacing
+
+                        Text {
+                            width: gpuRows.nameColumnWidth
+                            height: compactRoot.iconSz
+                            text: compactRoot.compactGpuName(gpuRow.modelData.name)
+                            font.pixelSize: compactRoot.labelPx
+                            color: Kirigami.Theme.textColor
+                            elide: Text.ElideRight
+                            verticalAlignment: Text.AlignVCenter
+                        }
+
+                        VerticalUsageMeter {
+                            implicitWidth: Math.round(compactRoot.iconSz * 1.1)
+                            implicitHeight: compactRoot.iconSz
+                            value: Math.max(0, Math.min(100, Number(gpuRow.modelData.usage) || 0)) / 100
+                            warningThreshold: 1
+                            criticalThreshold: 0.85
+                            borderColor: compactRoot.parentRef.themeBorderColor
+                        }
+
+                        Text {
+                            width: gpuPercentRef.implicitWidth
+                            height: compactRoot.iconSz
+                            text: compactRoot.parentRef.formatPercent(Number(gpuRow.modelData.usage) || 0)
+                            font.pixelSize: compactRoot.labelPx
+                            font.bold: true
+                            color: Kirigami.Theme.textColor
+                            verticalAlignment: Text.AlignVCenter
+                        }
+                    }
                 }
             }
         }
