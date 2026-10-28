@@ -474,13 +474,14 @@ Item {
                     }
 
                     Repeater {
-                        model: compactRoot.parentRef.cpuCores
+                        // Count only: a new array each tick would recreate the delegates and restart the bars from 0
+                        model: compactRoot.parentRef.cpuCores.length
 
                         Item {
                             id: cpuCoreMeter
 
                             required property int index
-                            required property var modelData
+                            readonly property real usage: compactRoot.parentRef.cpuCores[index]?.usage ?? 0
 
                             Layout.fillWidth: true
                             Layout.fillHeight: true
@@ -488,7 +489,7 @@ Item {
                             Rectangle {
                                 anchors.bottom: cpuCoreMeter.bottom
                                 width: cpuCoreMeter.width
-                                height: cpuCoreMeter.modelData.usage > 0 ? Math.max(1, cpuCoreMeter.height * (cpuCoreMeter.modelData.usage / 100)) : 0
+                                height: cpuCoreMeter.usage > 0 ? Math.max(1, cpuCoreMeter.height * (cpuCoreMeter.usage / 100)) : 0
                                 color: compactRoot.coreColors[cpuCoreMeter.index % compactRoot.coreColors.length]
 
                                 Behavior on height {
@@ -506,7 +507,7 @@ Item {
                 Layout.alignment: Qt.AlignVCenter
                 Layout.preferredWidth: Math.max(cpuPctRef.implicitWidth, cpuPctDecRef.implicitWidth)
                 Layout.minimumWidth: Math.max(cpuPctRef.implicitWidth, cpuPctDecRef.implicitWidth)
-                horizontalAlignment: Text.AlignLeft
+                horizontalAlignment: Text.AlignRight
                 text: compactRoot.parentRef.cpuTotal < 1 ? compactRoot.parentRef.cpuTotal.toFixed(1) + "%" : compactRoot.parentRef.cpuTotal.toFixed(0) + "%"
                 font.pixelSize: compactRoot.labelPx
                 font.bold: true

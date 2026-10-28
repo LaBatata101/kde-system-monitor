@@ -180,7 +180,7 @@ ColumnLayout {
             width: cpuDetailRoot.axisLabelWidth
             text: cpuDetailRoot.parentRef.cpuTotal.toFixed(0) + "%"
             font.pixelSize: 10
-            horizontalAlignment: Text.AlignLeft
+            horizontalAlignment: Text.AlignRight
             elide: Text.ElideRight
         }
     }
